@@ -4,3 +4,4 @@ Requirements:
 * manage dotfiles with [yadm](https://thelocehiliosan.github.io/yadm/)
 * [bootstrap](https://thelocehiliosan.github.io/yadm/docs/bootstrap) neovim plugins
 * use tor with github
+* use [tor with gnupg](https://gnupg.org/blog/20151224-gnupg-in-november-and-december.html)
