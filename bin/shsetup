@@ -1,0 +1,35 @@
+#!/usr/bin/python3
+
+import hashlib
+import os
+import socket
+import sys
+
+
+def colorize(string, seed=""):
+    """Return the given string with a RGB shell color that is always the same
+    for this particular string.
+
+    A seed can be added so the same string generate different color"""
+    string_hash = hashlib.md5((string + seed).encode()).digest()
+
+    colored_string = "\\033[38;2;{red};{green};{blue}m{string}\\033[0m".format(
+                        red=string_hash[0], green=string_hash[1],
+                        blue=string_hash[2], string=string)
+
+    return colored_string
+
+
+def generate_PS1():
+    """Return the PS1 variable."""
+
+    user = colorize(os.environ['USERNAME'], "username")
+    host = colorize(socket.gethostname(), "hostname")
+    directory = "\\033[1;34m\w\\033[0m"
+
+    return "{u}@{h}:{w}\$ ".format(u=user, h=host, w=directory)
+
+
+if __name__ == "__main__":
+    if (sys.argv[1] == "PS1"):
+        print(generate_PS1())
