@@ -13,9 +13,10 @@ def colorize(string, seed=""):
     A seed can be added so the same string generate different color"""
     string_hash = hashlib.md5((string + seed).encode()).digest()
 
-    colored_string = "\\033[38;2;{red};{green};{blue}m{string}\\033[0m".format(
-                        red=string_hash[0], green=string_hash[1],
-                        blue=string_hash[2], string=string)
+    openning = "\[\e[38;2;{red};{green};{blue}m\]".format(
+                red=string_hash[0], green=string_hash[1], blue=string_hash[2])
+    ending = "\[\e[0m\]"
+    colored_string = openning + string + ending
 
     return colored_string
 
@@ -25,7 +26,7 @@ def generate_PS1():
 
     user = colorize(os.environ['USERNAME'], "username")
     host = colorize(socket.gethostname(), "hostname")
-    directory = "\\033[1;34m\w\\033[0m"
+    directory = "\[\e[1;34m\w\e[0m\]"
 
     return "{u}@{h}:{w}\$ ".format(u=user, h=host, w=directory)
 
