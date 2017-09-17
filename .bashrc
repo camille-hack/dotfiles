@@ -54,5 +54,6 @@ if ! shopt -oq posix; then
 fi
 
 alias vim='echo "Use nvim instead !!"; sleep 3 ; nvim'
+alias ydl='youtube-dl -x --audio-format vorbis'
 
 export LANG='en_US.utf8'

@@ -6,17 +6,42 @@ import socket
 import sys
 
 
-def colorize(string, seed=""):
+def set_16_colors_escape_codes(string, color):
+    """Return the given string surrounded by a 16 colors ANSI escape code and
+    the escape code to reset the formatting.
+
+    color can be one of the following: black, red, green, yellow, blue,
+                                       magenta, cyan, white, default"""
+    color_dict = {"black": 30, "red": 31, "green": 32, "yellow": 33,
+                  "blue": 34, "magenta": 35, "cyan": 36, "white": 37,
+                  "default": 39}
+    openning = "\[\e[{color};1m\]".format(color=color_dict[color])
+    ending = "\[\e[0m\]"
+
+    return openning + string + ending
+
+
+def set_rgb_colors_escape_codes(string, red, green, blue):
+    """Return the given string surrounded by a RGB ANSI escape code and the
+    escape code to reset the formatting.
+
+    red, green and blue are 3 integers with values between 0 and 255."""
+    openning = "\[\e[38:2:{red}:{green}:{blue}m\]".format(red=red, green=green,
+                                                          blue=blue)
+    ending = "\[\e[0m\]"
+
+    return openning + string + ending
+
+
+def set_automatic_escape_codes(string, seed=""):
     """Return the given string with a RGB shell color that is always the same
     for this particular string.
 
-    A seed can be added so the same string generate different color"""
-    string_hash = hashlib.md5((string + seed).encode()).digest()
+    A seed can be added so the same string generate different color."""
+    str_hash = hashlib.md5((string + seed).encode()).digest()
 
-    openning = "\[\e[38;2;{red};{green};{blue}m\]".format(
-                red=string_hash[0], green=string_hash[1], blue=string_hash[2])
-    ending = "\[\e[0m\]"
-    colored_string = openning + string + ending
+    colored_string = set_rgb_colors_escape_codes(string, str_hash[0],
+                                                 str_hash[1], str_hash[2])
 
     return colored_string
 
@@ -24,9 +49,16 @@ def colorize(string, seed=""):
 def generate_PS1():
     """Return the PS1 variable."""
 
-    user = colorize(os.environ['USERNAME'], "username")
-    host = colorize(socket.gethostname(), "hostname")
-    directory = "\[\e[1;34m\w\e[0m\]"
+    if os.environ['TERM'] != "linux":
+        user = set_automatic_escape_codes(os.environ['USER'], "username")
+        host = set_automatic_escape_codes(socket.gethostname(), "hostname")
+    else:
+        user = set_16_colors_escape_codes("\\u", "yellow")
+        host = set_16_colors_escape_codes("\\h", "green")
+
+    if os.environ['USER'] == "root":
+        user = set_16_colors_escape_codes("root", "red")
+    directory = set_16_colors_escape_codes("\\w", "blue")
 
     return "{u}@{h}:{w}\$ ".format(u=user, h=host, w=directory)
 
