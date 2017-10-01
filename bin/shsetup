@@ -26,7 +26,7 @@ def set_rgb_colors_escape_codes(string, red, green, blue):
     escape code to reset the formatting.
 
     red, green and blue are 3 integers with values between 0 and 255."""
-    openning = "\[\e[38:2:{red}:{green}:{blue}m\]".format(red=red, green=green,
+    openning = "\[\e[38;2;{red};{green};{blue}m\]".format(red=red, green=green,
                                                           blue=blue)
     ending = "\[\e[0m\]"
 
