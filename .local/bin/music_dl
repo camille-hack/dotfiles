@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+
+"""Download my audio files from youtube etc inside the user music folder.
+
+This file should do a bit of magic regarding where to download stuff."""
+
+# TODO: write the file metadata
+
+import argparse
+import os
+import pathlib
+import youtube_dl
+import xdg_user_dir
+
+
+class RemoteAudio:
+    """Manage a remote audio file, that can be downloaded."""
+    __music_directory = xdg_user_dir.get_music_dir()
+    metadata = {"artist": None, "album": None, "title": None}
+
+    def __init__(self, name, url, folder):
+        """Setup a remote audio, with name, downloading url, and the folder to
+        download relative to the MUSIC xdg directory."""
+        self.name = name
+        self.url = url
+        self.directory = pathlib.Path(self.__music_directory, folder)
+
+    def download(self):
+        """Download audio file."""
+
+        # Skip if the file is already here
+        matches = self.directory.glob(self.name + ".*")
+        for match in matches:
+            print('skipping download: "' + match.as_posix() + '" exists')
+            return
+
+        # Download with youtube-dl
+        print("downloading %s…" % self.name)
+        options = {
+            'quiet': True,
+            'format': 'bestaudio/best',
+            'outtmpl': pathlib.Path(self.directory, self.name +
+                                    '.%(ext)s').as_posix(),
+            'ignoreerrors': True,
+            'postprocessors': ({'key': 'FFmpegExtractAudio'}, )
+        }
+        with youtube_dl.YoutubeDL(options) as ydl:
+            ydl.download((self.url, ))
+
+        #TODO Write metadata
+        #file_metadata = mutagen.File(pathlib.Path(self.directory, self.name, +
+        #                             self.extension, easy=True)
+        #file_metadata["title"] = self.metadata["title"]
+        #file_metadata["artist"] self.metadata["artist"]
+        #file_metadata["album"] = self.metadata["album"]
+        file_metadata.save()
+
+    def delete_local_file(self):
+        """Delete local audio files. Beware, because the extension is not
+        known, all files with similar names will be removed."""
+        path = pathlib.Path(self.directory)
+        matches = path.glob(self.name + ".*")
+        for match in matches:
+            print
+            ("removing %s…" % match.as_posix())
+            os.remove(match.as_posix())
+
+
+class RemoteSong(RemoteAudio):
+    def __init__(self, artist, title, url, album=None):
+        self.metadata["artist"] = artist
+        self.metadata["title"] = title
+        if album:
+            self.metadata["album"] = album
+
+        super().__init__(artist + " - " + title, url, "songs")
+
+
+class RemoteSound(RemoteAudio):
+    def __init__(self, name, url):
+        super().__init__(name, url, "sounds")
+
+
+__audio_list = (
+    RemoteSong("Casey", "Pas à vendre", "https://www.youtube.com/watch?v=oWPxQG0SF7U"),
+    RemoteSong("Casey", "Mon plus bel hommage", "https://www.youtube.com/watch?v=IJ3IfxzK7ZE"),
+    RemoteSong("Donna Summer", "I Feel Love", "https://www.youtube.com/watch?v=Nm-ISatLDG0"),
+    RemoteSong("Daler Mehndi", "Tunak Tunak Tun", "https://www.youtube.com/watch?v=vTIIMJ9tUc8"),
+    RemoteSong("DJ Pone", "M.F.C.", "https://www.youtube.com/watch?v=DxqLrPfHvSs"),
+    RemoteSong("DJ Pone", "Physical Element", "https://www.youtube.com/watch?v=fc9pWFDfPDM"),
+    RemoteSong("Felix Jaehn", "Bonfire ft. ALMA", "https://www.youtube.com/watch?v=w9IE9eYXn0U"),
+    RemoteSong("Georges Brassens", "La complainte des filles de joie", "https://www.youtube.com/watch?v=HwPgs21a8_I"),
+    RemoteSong("Georges Brassens", "La Mauvaise Réputation", "https://www.youtube.com/watch?v=26Nuj6dhte8"),
+    RemoteSong("Georges Brassens", "La ballade des gens qui sont nés quelque part", "https://www.youtube.com/watch?v=RSJmN-Mg978"),
+    RemoteSong("Hayley Kiyoko", "Cliffs Edge", "https://www.youtube.com/watch?v=7ZfCUM1uyvw"),
+    RemoteSong("Hayley Kiyoko", "One Bad Night", "https://www.youtube.com/watch?v=L_wXWFnTjxU"),
+    RemoteSong("Hayley Kiyoko", "Girls Like Girls", "https://www.youtube.com/watch?v=I0MT8SwNa_U"),
+    RemoteSong("Hugo TSR", "Là-Haut", "https://www.youtube.com/watch?v=eviqX3QXd-s"),
+    RemoteSong("Inbal Segev", "Bach's Cello Suite No. 1 in G major: Prelude", "https://www.youtube.com/watch?v=jpFj-h1sKvs"),
+    RemoteSong("Johnny cash", "I've been everywhere", "https://www.youtube.com/watch?v=VM_ncuwDtcE"),
+    RemoteSong("Kobito & Sookee", "Augen Zu", "https://www.youtube.com/watch?v=MI96cUORUFg"),
+    RemoteSong("Kreayshawn", "Gucci Gucci", "https://www.youtube.com/watch?v=6WJFjXtHcy4"),
+    RemoteSong("La rumeur", "Je connais tes cauchemars", "https://www.youtube.com/watch?v=dYdISJwrn4I"),
+    RemoteSong("Lauryn Hill", "Doo-Wop (That Thing)", "https://www.youtube.com/watch?v=T6QKqFPRZSA"),
+    RemoteSong("Lauryn Hill", "I Find It Hard To Say (Rebel)", "https://www.youtube.com/watch?v=ijFeWwaimLI"),
+    RemoteSong("M.I.A.", "Paper Planes", "https://www.youtube.com/watch?v=ewRjZoRtu0Y"),
+    RemoteSong("Mobb Deep", "Shook Ones", "https://www.youtube.com/watch?v=yoYZf-lBF_U"),
+    RemoteSong("PNL", "J'Suis QLF", "https://www.youtube.com/watch?v=5pjKjncwFBw"),
+    RemoteSong("PNL", "DA", "https://www.youtube.com/watch?v=9PODnRarD78"),
+    RemoteSong("PNL", "La vie est belle", "https://www.youtube.com/watch?v=Btg12Fuz7t0"),
+    RemoteSong("PNL", "Oh Lala", "https://www.youtube.com/watch?v=SWEYLpG70AI"),
+    RemoteSong("PNL", "Le monde ou rien", "https://www.youtube.com/watch?v=umF1kfVujhM"),
+    RemoteSong("PNL", "Plus Tony Que Sosa", "https://www.youtube.com/watch?v=kGpxoI9OevI"),
+    RemoteSong("PNL", "J'Comprends pas", "https://www.youtube.com/watch?v=P0OCoCCMsUc"),
+    RemoteSong("PNL", "La petite voix", "https://www.youtube.com/watch?v=897VhOZGulg"),
+    RemoteSong("PNL", "Gala Gala", "https://www.youtube.com/watch?v=UH5c3EThOBs"),
+    RemoteSong("PNL", "Je vis, je visser", "https://www.youtube.com/watch?v=wgPyDTT0e7w"),
+    RemoteSong("Ruby Rose", "Break Free", "https://www.youtube.com/watch?v=EFjsSSDLl8w"),
+    RemoteSong("Sevdaliza", "Human", "https://www.youtube.com/watch?v=9t7SclAXoQw"),
+    RemoteSong("Sevdaliza", "That other girl", "https://www.youtube.com/watch?v=koAtzvSBvfE"),
+    RemoteSong("Sookee & Tapete", "Pro Homo", "https://www.youtube.com/watch?v=l2PtaV4w_EQ"),
+    RemoteSong("Tapete", "Schwarzfahrt", "https://www.youtube.com/watch?v=izis0lupMmM"),
+    RemoteSong("The Blaze", "Virile", "https://www.youtube.com/watch?v=UivZrL2znh0"),
+    RemoteSong("The Blaze", "Territory", "https://www.youtube.com/watch?v=54fea7wuV6s"),
+    RemoteSong("The Slits", "Shoplifting", "https://www.youtube.com/watch?v=OTJmaid-3zk"),
+    RemoteSong("The Weather Girls", "It's Raining Men", "https://www.youtube.com/watch?v=l5aZJBLAu1E"),
+    RemoteSong("Norma Tanega", "You're Dead", "https://www.youtube.com/watch?v=ImAlx0amAIc"),
+    RemoteSong("Young M.A", "EAT", "https://www.youtube.com/watch?v=GW3gTa-XAlU"),
+    RemoteSong("Young M.A", "Oh My Gawdd", "https://www.youtube.com/watch?v=kqnXZUqDbSc"),
+    RemoteSong("Zebda", "Double peine", "https://www.youtube.com/watch?v=VWFTmz7YipA"),
+    RemoteSong("Zebda", "Goota ma différence", "https://www.youtube.com/watch?v=OoDn4j6pn8I"),
+    RemoteSong("Zebda", "Le Bruit et l'odeur", "https://www.youtube.com/watch?v=Fh2otDHTo68"),
+    RemoteSong("Zebda", "On Est Chez Nous", "https://www.youtube.com/watch?v=-dldrT5Erqo"),
+    RemoteSound("isochronic", "https://www.youtube.com/watch?v=fxB820vGEGo"),
+    RemoteSound("Brown noise", "https://en.wikipedia.org/wiki/File:Brownnoise.ogg"),
+    RemoteSound("Grey noise", "https://en.wikipedia.org/wiki/File:Gray_noise.ogg"),
+    RemoteSound("Grey noise (Inverse ITU-R 468 weighted)", "https://upload.wikimedia.org/wikipedia/commons/8/80/Inverse_ITU-R_468_weighted_%22grey_noise%22.ogg"),
+)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="fill up the music folder " +
+                                                 "with good vibes")
+    parser.add_argument("command", choices=["delete", "download"],
+                        help="delete or download music")
+    arguments = parser.parse_args()
+
+    if arguments.command == "download":
+        download_directories = set()
+        for audio in __audio_list:
+            download_directories.add(audio.directory)
+        for directory in download_directories:
+            print('creating directory "%s"…' % directory.as_posix())
+            os.makedirs(directory.as_posix(), exist_ok=True)
+        for audio in __audio_list:
+            audio.download()
+
+    elif arguments.command == "delete":
+        download_directories = set()
+        for audio in __audio_list:
+            audio.delete_local_file()
+            download_directories.add(audio.directory)
+        for directory in download_directories:
+            print('removing directory "%s"…' % directory.as_posix())
+            os.rmdir(directory.as_posix())
