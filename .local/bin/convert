@@ -1,0 +1,151 @@
+#!/bin/sh
+
+# TODO: apply to other than avi files
+#video_extensions = ["3gp", "avi", "dv", "flv", "m4v", "mkv", "mov", "mp4",
+#                        "mpeg", "mpg", "ogg", "ogv", "vob", "webm", "wmv"]
+# TODO: consider cleaning/making python script
+
+debug=true
+
+debug()
+{
+	message="$1"
+
+	[ $debug ] && printf "\e[33m%s\e[0m: %s\n" "debug" "$message"
+}
+
+warning()
+{
+	message="$1"
+
+	printf "\e[43m%s\e[0m: %s\n" "warning" "$message"
+}
+
+error()
+{
+	message="$1"
+
+	printf "\e[41m%s\e[0m: %s\n" "error" "$message"
+	exit 1
+}
+
+usage()
+{
+	program="$1"
+	echo "usage: $program [-h] directory
+
+Convert recursively a directory's videos to h264 video format, using VAAPI.
+
+arguments:
+	-h		display this usage message
+	directory	directory containing the videos"
+}
+
+# does not support working out of the file directory !!
+convert_file()
+{
+	file="$1"
+	file_name=""
+	file_extension=""
+	backup=""
+	converted=""
+
+	[ ! -f "$file" ] && error "$file is not a file"
+
+	file_name="$(echo "$file" | sed 's@\(.\+\)\.[a-zA-Z0-9]\+@\1@')"
+	file_extension="$(echo "$file" | sed 's@.\+\.\([a-zA-Z0-9]\+\)@\1@')"
+	backup=".$file.backup"
+	temporary=".$file_name.mkv"
+	converted="$file_name.mkv"
+
+	[ -z "$file_name" ] && error "couldn't find name of $file"
+	[ -z "$file_extension" ] && error "couldn't find extension of $file"
+	[ -f "$backup" ] && error "a file named $backup already exists"
+	[ -f "$temporary" ] && error "a file named $temporary already exists"
+	[ -f "$converted" ] && error "a file named $converted already exists"
+
+	debug "convert $file into $temporary"
+	ffmpeg -vaapi_device /dev/dri/renderD128 -hwaccel vaapi \
+			-hwaccel_output_format vaapi \
+			-hwaccel_device /dev/dri/renderD128 \
+			-threads 1 -nostdin -xerror \
+			-i "$file" \
+			-vf 'format=nv12|vaapi,hwupload' \
+			-c:v h264_vaapi -qp 18 \
+			"$temporary"
+	# If it fails, try without hardware decoding
+	if [ $? -ne 0 ]
+	then
+		warning "couldn't convert $file with hardware decoding"
+		rm "$temporary"
+		debug "convert with software decoding $file to $temporary"
+		ffmpeg -vaapi_device /dev/dri/renderD128 \
+	                -threads 1 -nostdin -xerror \
+	                -i "$file" \
+	                -vf 'format=nv12|vaapi,hwupload' \
+	                -c:v h264_vaapi -qp 18 \
+	                "$temporary"
+	fi
+	# If it fails again, skip the file
+	if [ $? -ne ]
+	then
+		warning "couldn't convert $file"
+		debug "remove $temporary"
+		rm "$temporary"
+		return
+	fi
+
+	debug "compare size of $file and $temporary"
+	# Compare size to keep the smallest
+	file_size=$(stat --format "%s" "$file")
+	temporary_size=$(stat --format "%s" "$temporary")
+	debug "file is $file_size, temporary is $temporary_size"
+	if [ $temporary_size -ge $file_size ]
+	then
+		debug "remove $temporary, because it is bigger"
+		rm "$temporary"
+		return
+	fi
+	debug "rename $file to $backup"
+	mv "$file" "$backup"
+	debug "rename $temporary to $converted"
+	mv "$temporary"	"$converted"
+
+	debug "remove backup $backup"
+	rm "$backup"
+}
+
+convert_directory()
+{
+	directory="$1"
+	file_videos=""
+	video_directory=""
+	video_name=""
+
+	[ ! -d "$directory" ] && error "$directory is not a directory"
+
+	file_videos="$(mktemp)"
+	debug "create video list $file_videos"
+	find "$directory" -name "*.avi" > "$file_videos"
+
+	while read video
+	do
+		video_directory="$(dirname "$video")"
+		video_name="$(basename "$video")"
+		debug "change to directory $video_directory"
+		cd "$video_directory"
+		convert_file "$video_name"
+		cd -
+	done < "$file_videos"
+
+	rm "$file_videos"
+	debug "remove video list $file_videos"
+}
+
+if [ "$1" = "-h" ]
+then
+	usage $0
+	exit 0
+fi
+
+convert_directory "$1"
