@@ -41,18 +41,28 @@ def reload_modules():
     set_connection(saved_connection)
 
 
+def restart_nm():
+    if os.getuid() is 0:
+        subprocess.run(['systemctl', 'stop', 'NetworkManager'])
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='manage the wifi')
-    parser.add_argument('-r', '--reload', action='store_true',
-                        help='reload the modules (fix some module bugs)')
-    parser.add_argument('-a', '--hotspot', action='store_true',
-                        help='enable the hotspot')
+    parser.add_argument('-k', '--reload-kmod', action='store_true',
+                        help='reload the kernel modules')
+    parser.add_argument('-r', '--restart-nm', action='store_true',
+                        help='restart nm-manager')
+    parser.add_argument('-a', '--access-point', action='store_true',
+                        help='turn wifi to access-point')
     arguments = parser.parse_args()
 
-    if arguments.reload:
+    if arguments.reload_kmod:
         reload_modules()
 
-    if arguments.hotspot:
+    if arguments.restart_nm:
+        restart_nm()
+
+    if arguments.access_point:
         set_connection('Hotspot')
         sys.exit(0)
 
