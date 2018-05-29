@@ -41,9 +41,11 @@ set ruler
 set termguicolors
 silent! colorscheme solarized8_dark_high
 let g:indentLine_setColors = 0
-" Set 79-column limit and highlight the 80st column
-set textwidth=79
-let &colorcolumn = join(range(80,256),",")
 " Disable embedded per-file nvim settings
 set nomodeline
 let g:markdown_folding=1
+" Wrapping: disable visual and editing automatic wrapping ;
+" instead, highlight the 80st column
+set nowrap
+set textwidth=0
+let &colorcolumn = join(range(80,256),",")
