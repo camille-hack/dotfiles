@@ -5,29 +5,9 @@
 #                        "mpeg", "mpg", "ogg", "ogv", "vob", "webm", "wmv"]
 # TODO: consider cleaning/making python script
 
+source ~/.local/lib/functions.sh
 debug=true
-
-debug()
-{
-	message="$1"
-
-	[ $debug ] && printf "\e[33m%s\e[0m: %s\n" "debug" "$message"
-}
-
-warning()
-{
-	message="$1"
-
-	printf "\e[43m%s\e[0m: %s\n" "warning" "$message"
-}
-
-error()
-{
-	message="$1"
-
-	printf "\e[41m%s\e[0m: %s\n" "error" "$message"
-	exit 1
-}
+use ffmpeg
 
 usage()
 {
@@ -50,7 +30,7 @@ convert_file()
 	backup=""
 	converted=""
 
-	[ ! -f "$file" ] && error "$file is not a file"
+	[ ! -f "$file" ] && fail "$file is not a file"
 
 	file_name="$(echo "$file" | sed 's@\(.\+\)\.[a-zA-Z0-9]\+@\1@')"
 	file_extension="$(echo "$file" | sed 's@.\+\.\([a-zA-Z0-9]\+\)@\1@')"
@@ -58,11 +38,11 @@ convert_file()
 	temporary=".$file_name.mkv"
 	converted="$file_name.mkv"
 
-	[ -z "$file_name" ] && error "couldn't find name of $file"
-	[ -z "$file_extension" ] && error "couldn't find extension of $file"
-	[ -f "$backup" ] && error "a file named $backup already exists"
-	[ -f "$temporary" ] && error "a file named $temporary already exists"
-	[ -f "$converted" ] && error "a file named $converted already exists"
+	[ -z "$file_name" ] && fail "couldn't find name of $file"
+	[ -z "$file_extension" ] && fail "couldn't find extension of $file"
+	[ -f "$backup" ] && fail "a file named $backup already exists"
+	[ -f "$temporary" ] && fail "a file named $temporary already exists"
+	[ -f "$converted" ] && fail "a file named $converted already exists"
 
 	debug "convert $file into $temporary"
 	ffmpeg -vaapi_device /dev/dri/renderD128 -hwaccel vaapi \
@@ -76,7 +56,7 @@ convert_file()
 	# If it fails, try without hardware decoding
 	if [ $? -ne 0 ]
 	then
-		warning "couldn't convert $file with hardware decoding"
+		warn "couldn't convert $file with hardware decoding"
 		rm "$temporary"
 		debug "convert with software decoding $file to $temporary"
 		ffmpeg -vaapi_device /dev/dri/renderD128 \
@@ -89,7 +69,7 @@ convert_file()
 	# If it fails again, skip the file
 	if [ $? -ne ]
 	then
-		warning "couldn't convert $file"
+		warn "couldn't convert $file"
 		debug "remove $temporary"
 		rm "$temporary"
 		return
@@ -122,7 +102,7 @@ convert_directory()
 	video_directory=""
 	video_name=""
 
-	[ ! -d "$directory" ] && error "$directory is not a directory"
+	[ ! -d "$directory" ] && fail "$directory is not a directory"
 
 	file_videos="$(mktemp)"
 	debug "create video list $file_videos"
