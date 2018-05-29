@@ -1,9 +1,18 @@
 # Camille Hack's Dotfiles #
 
-Requirements:
-* manage dotfiles with [yadm](https://thelocehiliosan.github.io/yadm/)
-* [bootstrap](https://thelocehiliosan.github.io/yadm/docs/bootstrap) neovim plugins
-* use tor with github
-* use [tor with gnupg](https://gnupg.org/blog/20151224-gnupg-in-november-and-december.html)
-* respect [systemd file hierarchy](https://www.freedesktop.org/software/systemd/man/file-hierarchy.html)
+## Installation ##
+
+Install [yadm](https://thelocehiliosan.github.io/yadm/) first 
+
+```
+yadm clone https://github.com/camille-hack/dotfiles.git
+```
+
+## Development ##
+
+* [x] manage dotfiles with [yadm](https://thelocehiliosan.github.io/yadm/)
+* [ ] [bootstrap](https://thelocehiliosan.github.io/yadm/docs/bootstrap) neovim plugins
+* [ ] use tor with github
+* [ ] use [tor with gnupg](https://gnupg.org/blog/20151224-gnupg-in-november-and-december.html)
+* [ ] respect [systemd file hierarchy](https://www.freedesktop.org/software/systemd/man/file-hierarchy.html)
 and [xdg user directories](https://www.freedesktop.org/wiki/Software/xdg-user-dirs/)
