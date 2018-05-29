@@ -5,6 +5,7 @@
 You need the following software:
 * [yadm](https://thelocehiliosan.github.io/yadm/)
 * [neovim](https://neovim.io/) and python-neovim
+* [socat](http://www.dest-unreach.org/socat/)
 
 Then, install [yadm](https://thelocehiliosan.github.io/yadm/) and clone
 ```
