@@ -1,28 +1,21 @@
+umask 027
+export LANG='en_US.utf8'
 if [ -d "$HOME/.local/bin" ] ; then
     PATH="$HOME/.local/bin:$PATH"
 fi
-
-# If not running interactively, don't do anything
-case $- in
-    *i*) ;;
-      *) return;;
-esac
+export PATH
 
 # don't put duplicate lines or lines starting with space in the history.
-# See bash(1) for more options
 HISTCONTROL=ignoreboth
-
 # append to the history file, don't overwrite it
 shopt -s histappend
-
-# for setting history length see HISTSIZE and HISTFILESIZE in bash(1)
+# set history length
 HISTSIZE=1000
 HISTFILESIZE=2000
-
-# Checks window size after each command
+# checks window size after each command
 shopt -s checkwinsize
 
-# Set PS1
+# set PS1
 PS1="`shsetup PS1`"
 
 # enable color support of ls and also add handy aliases
@@ -52,8 +45,3 @@ if ! shopt -oq posix; then
     . /etc/bash_completion
   fi
 fi
-
-alias vim='echo "Use nvim instead !!"; sleep 3 ; nvim'
-alias ydl='youtube-dl -x --audio-format vorbis'
-
-export LANG='en_US.utf8'
