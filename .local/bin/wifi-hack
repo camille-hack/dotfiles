@@ -9,9 +9,13 @@ import time
 
 def get_connection():
     """Get the name of the current connection on wlan0."""
-    stdout = subprocess.run(['nmcli', '--terse', '--fields',
-                            'GENERAL.CONNECTION', 'device', 'show', 'wlan0'],
-                            stdout=subprocess.PIPE).stdout.decode('utf-8')
+    process_result = subprocess.run(['nmcli', '--terse', '--fields',
+                                     'GENERAL.CONNECTION', 'device', 'show',
+                                     'wlan0'], stdout=subprocess.PIPE)
+    if process_result.returncode != 0:
+        sys.exit(1)
+
+    stdout = process_result.stdout.decode('utf-8')
     connection = stdout.split(':')[1].splitlines()[0]
 
     return connection
