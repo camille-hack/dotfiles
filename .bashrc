@@ -1,4 +1,4 @@
-umask 027
+umask 077
 export LANG='en_US.utf8'
 if [ -d "$HOME/.local/bin" ] ; then
     PATH="$HOME/.local/bin:$PATH"
