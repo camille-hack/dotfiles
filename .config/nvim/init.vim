@@ -25,9 +25,10 @@ call plug#end()
 
 source ~/.config/nvim/completion.vim
 
+let g:deoplete#enable_at_startup = 1
 " Flake8 is installed with python3 and not default python
 let g:ale_python_flake8_executable = 'python3'
-let g:ale_python_flake8_args = '-m flake8'
+let g:ale_python_flake8_options = '-m flake8'
 
 set spelllang=de,en,fr
 " Disable mouse integration, allow middle-mouse paste
