@@ -3,9 +3,12 @@
 ## Setup ##
 
 You need the following software:
+* [socat](http://www.dest-unreach.org/socat/) to update anonymously
 * [yadm](https://thelocehiliosan.github.io/yadm/)
-* [neovim](https://neovim.io/) and python-neovim
-* [socat](http://www.dest-unreach.org/socat/)
+* python-neovim and [jedi](https://github.com/davidhalter/jedi) for using with
+neovim
+* [pytaglib](https://pypi.org/project/pytaglib/) and
+[youtube-dl](https://rg3.github.io/youtube-dl/) for the music\_dl script
 
 Then, install [yadm](https://thelocehiliosan.github.io/yadm/) and clone
 ```

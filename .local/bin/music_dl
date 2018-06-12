@@ -5,142 +5,209 @@
 This file should do a bit of magic regarding where to download stuff."""
 
 # TODO: write the file metadata
-# TODO: write a playlist
 
 import argparse
 import csv
+import errno
 import os
 import pathlib
-import youtube_dl
+import re
+import taglib
 import user_xdg_dirs
+import youtube_dl
+
+
+
+def download_audio(url, directory, name):
+    """Download the file from url (with youtube_dl) into the directory with the
+    given name (without extension) and return the file path with extension."""
+    options = {
+        'quiet': True,
+        'format': 'bestaudio/best',
+        'outtmpl': pathlib.Path(directory, name + '.%(ext)s').as_posix(),
+        'ignoreerrors': True,
+        'postprocessors': ({'key': 'FFmpegExtractAudio'}, ),
+        'dump_single_json': True
+    }
+    try:
+        directory.mkdir(parents=True)
+    except FileExistsError:
+        pass
+    with youtube_dl.YoutubeDL(options) as ydl:
+        result = ydl.extract_info(url)
+        if not result:
+            return None
+
+        # TODO: find a way to get the right filename youtube-dl after executing the
+        # extractaudio postprocessor
+        #audio_path = pathlib.Path(ydl.prepare_filename(result))
+    pathes = pathlib.Path(directory).glob(name + "*")
+    audio_path = pathes[0]
+
+    return audio_path
+
+def write_metadata(path, artist, album, title):
+    """Write basic metadata to an audio file (with pytaglib)."""
+    audio_file = taglib.File(path.as_posix())
+    audio_file.removeUnsupportedProperties(audio_file.unsupported)
+    print(audio_file)
+    print(audio_file.tags)
+    for tag in audio_file.tags:
+        del tag
+    audio_file.tags["ARTIST"] = artist
+    audio_file.tags["ALBUM"] = album
+    audio_file.tags["TITLE"] = title
+    print(audio_file)
+    print(audio_file.tags)
+    audio_file.save()
 
 
 class RemoteAudio:
-    """Remote audio file, that can be downloaded with youtube_dl. The local
-    file lives in xdg MUSIC directory."""
-    __music_directory = user_xdg_dirs.get_music_dir()
-
+    """Remote audio file, that can be downloaded with youtube_dl."""
     metadata = {"artist": None,
                 "album": None,
                 "title": None}
 
-    def __init__(self, name, url, folder):
+    def __init__(self, directory, name, url):
         """Configure remote audio information, to download from the url into
-        its relative folder with given name.
+        the given directory with given name.
 
+        directory: directory where lives the audio files
         name: name of the file
-        url: url to download with youtube_dl
-        folder: directory relative to MUSIC xdg directory"""
+        url: url to download with youtube_dl"""
+        self.directory = pathlib.Path(directory).resolve()
         self.name = name
         self.url = url
-        self.directory = pathlib.Path(self.__music_directory, folder)
 
     def download(self):
         """Download the audio file."""
-
         # Skip if the file is already here
         matches = self.directory.glob(self.name + ".*")
         for match in matches:
             print('skipping download: "' + match.as_posix() + '" exists')
             return
 
-        # Download with youtube-dl
         print("downloading %s…" % self.name)
-        options = {
-            'quiet': True,
-            'format': 'bestaudio/best',
-            'outtmpl': pathlib.Path(self.directory, self.name +
-                                    '.%(ext)s').as_posix(),
-            'ignoreerrors': True,
-            'postprocessors': ({'key': 'FFmpegExtractAudio'}, )
-        }
-        with youtube_dl.YoutubeDL(options) as ydl:
-            ydl.download((self.url, ))
+        audio_path = download_audio(self.url, self.directory, self.name)
+        if audio_path:
+            write_metadata(audio_path, **self.metadata)
 
-#       TODO Write metadata
-#       file_metadata = mutagen.File(pathlib.Path(self.directory, self.name, +
-#                                    self.extension, easy=True)
-#       file_metadata["title"] = self.metadata["title"]
-#       file_metadata["artist"] self.metadata["artist"]
-#       file_metadata["album"] = self.metadata["album"]
-#       file_metadata.save()
-
-    def delete_local_file(self):
+    def delete(self, root_directory):
         """Delete the audio file.
 
-        Beware, because the extension is not known, therefore all files with
-        similar names will be removed."""
-        path = pathlib.Path(self.directory)
-        matches = path.glob(self.name + ".*")
+        When empty, remove directories until root_directory is reached."""
+        root_directory = pathlib.Path(root_directory).resolve()
+        directory = self.directory
+        if root_directory.as_posix() not in directory.as_posix():
+            print_error_bad_root_directory(root_directory, directory)
+
+#       Remove all files with names in the directory
+        matches = self.directory.glob(self.name + ".*")
         for match in matches:
-            print
-            ("removing %s…" % match.as_posix())
-            os.remove(match.as_posix())
+            print("removing %s…" % match.as_posix())
+            match.unlink()
+
+#       Recursively remove empty directories until root_directory is
+#       reached.
+        while directory != root_directory:
+            try:
+                directory.rmdir()
+            except OSError as e:
+                if e.errno != errno.ENOTEMPTY and ex.errno != errno.ENOENT:
+                    raise e
+            directory = directory.parent
+
+
+    def get_youtube_id(self):
+        regex = re.compile(r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/(watch\?v=|embed/|v/|.+\?v=)?(?P<id>[A-Za-z0-9\-=_]{11})')
+        match = regex.match(self.url)
+        if not match:
+            return None
+        return match.group('id')
+
+
+
+def print_error_bad_root_directory(root_directory, directory):
+    print("error: %s not in %s" % root_directory, directory)
+
 
 
 class RemoteAlbum(RemoteAudio):
     """Remote audio album. Lives in a "albums" folder."""
-    def __init__(self, artist, album, url):
+    def __init__(self, directory, artist, album, url):
         self.metadata["artist"] = artist
         self.metadata["album"] = album
 
-        super().__init__(artist, url, os.path.join("albums", artist, album))
+        super().__init__(pathlib.Path(directory, "albums", artist, album),
+                         album, url)
 
 
 class RemoteSong(RemoteAudio):
     """Remote audio song. Lives in a "songs" folder."""
-    def __init__(self, artist, title, url, album=None):
+    def __init__(self, directory, artist, title, url, album=None):
         self.metadata["artist"] = artist
         self.metadata["title"] = title
         if album:
             self.metadata["album"] = album
 
-        super().__init__(artist + " - " + title, url, "songs")
+        super().__init__(pathlib.Path(directory, "songs"),
+                         artist + " - " + title, url)
 
 
 class RemoteSound(RemoteAudio):
     """Remote sound. Lives in a "sounds" folder."""
-    def __init__(self, name, url):
-        super().__init__(name, url, "sounds")
+    def __init__(self, directory, name, url):
+        super().__init__(pathlib.Path(directory, "sounds"), name, url)
 
 
-def parse_list():
-    music_directory = user_xdg_dirs.get_music_dir()
+def print_error_wrong_csv_first_column(line_number, category):
+    print("error: line %s has an incorrect category (%s)" % line_number, category)
 
-    with open(os.path.join(music_directory, "urls.csv")) as csv_file:
+
+def parse_list(audio_directory):
+    """Parse urls.csv from the given directory
+    to yield appropriate objects (RemoteAlbum, RemoteSound, RemoteSong).
+
+    urls.csv should be a regular CSV file with the following columns:
+    * for albums,   [   "album",   artist, album,  url ]
+    * for songs,    [   "song",    artist, title,  url ]
+    * for sounds,   [   "sound",   name,   url         ]
+    """
+    audio_list = pathlib.Path(audio_directory, "urls.csv").resolve()
+    with audio_list.open() as csv_file:
         reader = csv.reader(csv_file)
         for row in reader:
             if row[0] == "album":
-                audio = RemoteAlbum(row[1], row[2], row[3])
+                audio = RemoteAlbum(audio_directory, row[1], row[2], row[3])
             elif row[0] == "song":
-                audio = RemoteSong(row[1], row[2], row[3])
+                audio = RemoteSong(audio_directory, row[1], row[2], row[3])
             elif row[0] == "sound":
-                audio = RemoteSound(row[1], row[2])
+                audio = RemoteSound(audio_directory, row[1], row[2])
+            else:
+                print_error_wrong_csv_first_column(reader.line_number, row[0])
             yield audio
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="fill up the music folder " +
+    parser = argparse.ArgumentParser(description="fill up the audio folder " +
                                                  "with good vibes")
-    parser.add_argument("command", choices=["delete", "download"],
-                        help="delete or download music")
+    parser.add_argument("command", choices=["delete", "download", "stream"],
+                        help="delete, download audio files or get a stream")
+    parser.add_argument("-d", "--dir", dest="directory",
+                        default=user_xdg_dirs.get_music_dir(),
+                        help="directory to store music, " +
+                        "XDG music directory if none")
     arguments = parser.parse_args()
 
-    if arguments.command == "download":
-        download_directories = set()
-        for audio in parse_list():
-            download_directories.add(audio.directory)
-        for directory in download_directories:
-            print('creating directory "%s"…' % directory.as_posix())
-            os.makedirs(directory.as_posix(), exist_ok=True)
-        for audio in parse_list():
-            audio.download()
 
+    if arguments.command == "download":
+        for audio in parse_list(arguments.directory):
+            audio.download()
     elif arguments.command == "delete":
-        download_directories = set()
-        for audio in parse_list():
-            audio.delete_local_file()
-            download_directories.add(audio.directory)
-        for directory in download_directories:
-            print('removing directory "%s"…' % directory.as_posix())
-            os.rmdir(directory.as_posix())
+        for audio in parse_list(arguments.directory):
+            audio.delete(arguments.directory)
+    elif arguments.command == "stream":
+        audios = parse_list(arguments.directory)
+        ids = [audio.get_youtube_id() for audio in audios if audio.get_youtube_id()]
+        print("https://www.youtube.com/watch_videos?video_ids=", end='')
+        print(*ids, sep=',')
