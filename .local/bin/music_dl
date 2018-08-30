@@ -4,7 +4,7 @@
 
 This file should do a bit of magic regarding where to download stuff."""
 
-# TODO: write the file metadata
+# TODO: find a way to debug, not actually filling the user music directory
 
 import argparse
 import csv
@@ -22,12 +22,9 @@ def download_audio(url, directory, name):
     """Download the file from url (with youtube_dl) into the directory with the
     given name (without extension) and return the file path with extension."""
     options = {
-        'quiet': True,
         'format': 'bestaudio/best',
         'outtmpl': pathlib.Path(directory, name + '.%(ext)s').as_posix(),
-        'ignoreerrors': True,
         'postprocessors': ({'key': 'FFmpegExtractAudio'}, ),
-        'dump_single_json': True
     }
     try:
         directory.mkdir(parents=True)
@@ -38,27 +35,25 @@ def download_audio(url, directory, name):
         if not result:
             return None
 
-        # TODO: find a way to get the right filename youtube-dl after executing the
-        # extractaudio postprocessor
-        #audio_path = pathlib.Path(ydl.prepare_filename(result))
     pathes = pathlib.Path(directory).glob(name + "*")
-    audio_path = pathes[0]
+    for audio_path in pathes:
+        break
+
+    if not audio_path:
+        print("could't get downloaded file path for %s (%s -> %s)", name, url, directory)
 
     return audio_path
 
 def write_metadata(path, artist, album, title):
     """Write basic metadata to an audio file (with pytaglib)."""
     audio_file = taglib.File(path.as_posix())
-    audio_file.removeUnsupportedProperties(audio_file.unsupported)
-    print(audio_file)
-    print(audio_file.tags)
-    for tag in audio_file.tags:
-        del tag
-    audio_file.tags["ARTIST"] = artist
-    audio_file.tags["ALBUM"] = album
-    audio_file.tags["TITLE"] = title
-    print(audio_file)
-    print(audio_file.tags)
+    audio_file.tags.clear()
+    if artist:
+        audio_file.tags["ARTIST"] = artist
+    if album:
+        audio_file.tags["ALBUM"] = album
+    if title:
+        audio_file.tags["TITLE"] = title
     audio_file.save()
 
 
@@ -81,13 +76,6 @@ class RemoteAudio:
 
     def download(self):
         """Download the audio file."""
-        # Skip if the file is already here
-        matches = self.directory.glob(self.name + ".*")
-        for match in matches:
-            print('skipping download: "' + match.as_posix() + '" exists')
-            return
-
-        print("downloading %s…" % self.name)
         audio_path = download_audio(self.url, self.directory, self.name)
         if audio_path:
             write_metadata(audio_path, **self.metadata)
@@ -101,7 +89,7 @@ class RemoteAudio:
         if root_directory.as_posix() not in directory.as_posix():
             print_error_bad_root_directory(root_directory, directory)
 
-#       Remove all files with names in the directory
+#       Remove all files with similar names in the directory
         matches = self.directory.glob(self.name + ".*")
         for match in matches:
             print("removing %s…" % match.as_posix())
@@ -113,7 +101,7 @@ class RemoteAudio:
             try:
                 directory.rmdir()
             except OSError as e:
-                if e.errno != errno.ENOTEMPTY and ex.errno != errno.ENOENT:
+                if e.errno != errno.ENOTEMPTY and e.errno != errno.ENOENT:
                     raise e
             directory = directory.parent
 
@@ -135,29 +123,32 @@ def print_error_bad_root_directory(root_directory, directory):
 class RemoteAlbum(RemoteAudio):
     """Remote audio album. Lives in a "albums" folder."""
     def __init__(self, directory, artist, album, url):
+        location = pathlib.Path(directory, "albums", artist)
+        super().__init__(location, album, url)
         self.metadata["artist"] = artist
         self.metadata["album"] = album
-
-        super().__init__(pathlib.Path(directory, "albums", artist, album),
-                         album, url)
+        self.metadata["title"] = None
 
 
 class RemoteSong(RemoteAudio):
     """Remote audio song. Lives in a "songs" folder."""
     def __init__(self, directory, artist, title, url, album=None):
+        location = pathlib.Path(directory, "songs")
+        name = artist + " - " + title
+        super().__init__(location, name, url)
         self.metadata["artist"] = artist
+        self.metadata["album"] = album
         self.metadata["title"] = title
-        if album:
-            self.metadata["album"] = album
-
-        super().__init__(pathlib.Path(directory, "songs"),
-                         artist + " - " + title, url)
 
 
 class RemoteSound(RemoteAudio):
     """Remote sound. Lives in a "sounds" folder."""
     def __init__(self, directory, name, url):
-        super().__init__(pathlib.Path(directory, "sounds"), name, url)
+        location = pathlib.Path(directory, "sounds")
+        super().__init__(location, name, url)
+        self.metadata["artist"] = None
+        self.metadata["album"] = None
+        self.metadata["title"] = None
 
 
 def print_error_wrong_csv_first_column(line_number, category):
