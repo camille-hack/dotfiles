@@ -5,17 +5,18 @@
 This file should do a bit of magic regarding where to download stuff."""
 
 # TODO: find a way to debug, not actually filling the user music directory
+# TODO: start tracking bugs with unitary tests
+# BUG: what if urls.csv doesn't exist ?
+# BUG: what if music folders doesn't exist ?
 
 import argparse
 import csv
 import errno
-import os
 import pathlib
 import re
 import taglib
 import user_xdg_dirs
 import youtube_dl
-
 
 
 def download_audio(url, directory, name):
@@ -40,9 +41,11 @@ def download_audio(url, directory, name):
         break
 
     if not audio_path:
-        print("could't get downloaded file path for %s (%s -> %s)", name, url, directory)
+        print("could't get downloaded file path for %s (%s -> %s)", name, url,
+              directory)
 
     return audio_path
+
 
 def write_metadata(path, artist, album, title):
     """Write basic metadata to an audio file (with pytaglib)."""
@@ -105,19 +108,19 @@ class RemoteAudio:
                     raise e
             directory = directory.parent
 
-
     def get_youtube_id(self):
-        regex = re.compile(r'(https?://)?(www\.)?(youtube|youtu|youtube-nocookie)\.(com|be)/(watch\?v=|embed/|v/|.+\?v=)?(?P<id>[A-Za-z0-9\-=_]{11})')
+        regex = re.compile(r'(https?://)?(www\.)'
+                           r'?(youtube|youtu|youtube-nocookie)\.(com|be)'
+                           r'/(watch\?v=|embed/|v/|.+\?v=)'
+                           r'?(?P<id>[A-Za-z0-9\-=_]{11})')
         match = regex.match(self.url)
         if not match:
             return None
         return match.group('id')
 
 
-
 def print_error_bad_root_directory(root_directory, directory):
     print("error: %s not in %s" % root_directory, directory)
-
 
 
 class RemoteAlbum(RemoteAudio):
@@ -152,7 +155,8 @@ class RemoteSound(RemoteAudio):
 
 
 def print_error_wrong_csv_first_column(line_number, category):
-    print("error: line %s has an incorrect category (%s)" % line_number, category)
+    print("error: line %s has an incorrect category (%s)" % line_number,
+          category)
 
 
 def parse_list(audio_directory):
@@ -164,6 +168,7 @@ def parse_list(audio_directory):
     * for songs,    [   "song",    artist, title,  url ]
     * for sounds,   [   "sound",   name,   url         ]
     """
+
     audio_list = pathlib.Path(audio_directory, "urls.csv").resolve()
     with audio_list.open() as csv_file:
         reader = csv.reader(csv_file)
@@ -190,7 +195,6 @@ if __name__ == "__main__":
                         "XDG music directory if none")
     arguments = parser.parse_args()
 
-
     if arguments.command == "download":
         for audio in parse_list(arguments.directory):
             audio.download()
@@ -199,6 +203,7 @@ if __name__ == "__main__":
             audio.delete(arguments.directory)
     elif arguments.command == "stream":
         audios = parse_list(arguments.directory)
-        ids = [audio.get_youtube_id() for audio in audios if audio.get_youtube_id()]
+        ids = [audio.get_youtube_id() for audio in audios
+               if audio.get_youtube_id()]
         print("https://www.youtube.com/watch_videos?video_ids=", end='')
         print(*ids, sep=',')
