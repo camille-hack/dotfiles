@@ -10,22 +10,22 @@ if empty(glob("~/.local/share/nvim/site/autoload/plug.vim"))
 endif
 
 call plug#begin('~/.local/share/nvim/plugged')
-" General appearance
+"" General appearance
 Plug 'vim-airline/vim-airline'
 Plug 'ntpeters/vim-better-whitespace'
-Plug 'airblade/vim-gitgutter'
+Plug 'mhinz/vim-signify'
 Plug 'lifepillar/vim-solarized8'
-" General behaviors
+"" General behaviors
 Plug 'w0rp/ale'
-Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
-Plug 'zchee/deoplete-jedi'
+"Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
+"Plug 'deoplete-plugins/deoplete-jedi'
 " Writing documents
 Plug 'tpope/vim-markdown'
 call plug#end()
 
+" Completion (deoplete)
 source ~/.config/nvim/completion.vim
 
-let g:deoplete#enable_at_startup = 1
 " Flake8 is installed with python3 and not default python
 let g:ale_python_flake8_executable = 'python3'
 let g:ale_python_flake8_options = '-m flake8'
@@ -40,7 +40,8 @@ set tabstop=8 softtabstop=8 shiftwidth=8 noexpandtab
 set ruler
 " Use true colors and solarized dark theme
 set termguicolors
-silent! colorscheme solarized8_dark_high
+set background=dark
+colorscheme solarized8_high
 let g:indentLine_setColors = 0
 " Disable embedded per-file nvim settings
 set nomodeline
