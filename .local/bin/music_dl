@@ -8,6 +8,10 @@ This file should do a bit of magic regarding where to download stuff."""
 # TODO: start tracking bugs with unitary tests
 # BUG: what if urls.csv doesn't exist ?
 # BUG: what if music folders doesn't exist ?
+# TODO: find a way to add genre (maybe tags) or tempo, and create playlist
+# accordingly
+# TODO: export with name written with ascii
+# TODO: find a way to have compatibility with android: no ["?",":"]
 
 import argparse
 import csv
