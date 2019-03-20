@@ -3,6 +3,7 @@
 ## Setup ##
 
 You need the following software:
+* python last stable version
 * [socat](http://www.dest-unreach.org/socat/) to update anonymously
 * [yadm](https://thelocehiliosan.github.io/yadm/)
 * pynvim and [jedi](https://github.com/davidhalter/jedi) for using with
