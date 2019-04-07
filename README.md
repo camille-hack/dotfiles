@@ -6,7 +6,7 @@ You need the following software:
 * python last stable version
 * [socat](http://www.dest-unreach.org/socat/) to update anonymously
 * [yadm](https://thelocehiliosan.github.io/yadm/)
-* pynvim and [jedi](https://github.com/davidhalter/jedi) for using with
+* pynvim, [flake8](https://gitlab.com/pycqa/flake8) and [jedi](https://github.com/davidhalter/jedi) for using with
 neovim
 * [pytaglib](https://pypi.org/project/pytaglib/) and
 [youtube-dl](https://rg3.github.io/youtube-dl/) for the music\_dl script
