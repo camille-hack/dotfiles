@@ -17,8 +17,8 @@ Plug 'mhinz/vim-signify'
 Plug 'lifepillar/vim-solarized8'
 "" General behaviors
 Plug 'w0rp/ale'
-"Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
-"Plug 'deoplete-plugins/deoplete-jedi'
+Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
+Plug 'deoplete-plugins/deoplete-jedi'
 " Writing documents
 Plug 'tpope/vim-markdown'
 call plug#end()
