@@ -25,7 +25,7 @@ import youtube_dl
 
 def download_audio(url, directory, name):
     """Download the file from url (with youtube_dl) into the directory with the
-    given name (without extension) and return the file path with extension."""
+    given name (without extension) and return the file path."""
     options = {
         'format': 'bestaudio/best',
         'outtmpl': pathlib.Path(directory, name + '.%(ext)s').as_posix(),
@@ -81,8 +81,16 @@ class RemoteAudio:
         self.name = name
         self.url = url
 
-    def download(self):
-        """Download the audio file."""
+    def download(self, skip=False):
+        """Download the audio file.
+
+        skip: skip downloading when an existing audio file exists"""
+        if skip:
+            pathes = set(pathlib.Path(self.directory).glob(self.name + "*"))
+            if pathes:
+                print("%s already exists, skipping" % self.name)
+                return
+
         audio_path = download_audio(self.url, self.directory, self.name)
         if audio_path:
             write_metadata(audio_path, **self.metadata)
@@ -197,11 +205,13 @@ if __name__ == "__main__":
                         default=user_xdg_dirs.get_music_dir(),
                         help="directory to store music, " +
                         "XDG music directory if none")
+    parser.add_argument("-s", "--skip", action="store_true",
+                        help="skip existing files when downloading")
     arguments = parser.parse_args()
 
     if arguments.command == "download":
         for audio in parse_list(arguments.directory):
-            audio.download()
+            audio.download(skip=arguments.skip)
     elif arguments.command == "delete":
         for audio in parse_list(arguments.directory):
             audio.delete(arguments.directory)
