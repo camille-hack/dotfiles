@@ -15,8 +15,8 @@ def set_16_colors_escape_codes(string, color):
     color_dict = {"black": 30, "red": 31, "green": 32, "yellow": 33,
                   "blue": 34, "magenta": 35, "cyan": 36, "white": 37,
                   "default": 39}
-    openning = "\[\e[{color};1m\]".format(color=color_dict[color])
-    ending = "\[\e[0m\]"
+    openning = r"\[\e[{color};1m\]".format(color=color_dict[color])
+    ending = r"\[\e[0m\]"
 
     return openning + string + ending
 
@@ -26,9 +26,10 @@ def set_rgb_colors_escape_codes(string, red, green, blue):
     escape code to reset the formatting.
 
     red, green and blue are 3 integers with values between 0 and 255."""
-    openning = "\[\e[38;2;{red};{green};{blue}m\]".format(red=red, green=green,
-                                                          blue=blue)
-    ending = "\[\e[0m\]"
+    openning = r"\[\e[38;2;{red};{green};{blue}m\]".format(red=red,
+                                                           green=green,
+                                                           blue=blue)
+    ending = r"\[\e[0m\]"
 
     return openning + string + ending
 
@@ -49,18 +50,18 @@ def set_automatic_escape_codes(string, seed=""):
 def generate_PS1():
     """Return the PS1 variable."""
 
-    if os.environ['TERM'] != "linux":
+    if 'TERM' in os.environ and os.environ['TERM'] != "linux":
         user = set_automatic_escape_codes(os.environ['USER'], "username")
         host = set_automatic_escape_codes(socket.gethostname(), "hostname")
     else:
-        user = set_16_colors_escape_codes("\\u", "yellow")
-        host = set_16_colors_escape_codes("\\h", "green")
+        user = set_16_colors_escape_codes(r"\u", "yellow")
+        host = set_16_colors_escape_codes(r"\h", "green")
 
     if os.environ['USER'] == "root":
         user = set_16_colors_escape_codes("root", "red")
-    directory = set_16_colors_escape_codes("\\w", "blue")
+    directory = set_16_colors_escape_codes(r"\w", "blue")
 
-    return "{u}@{h}:{w}\$ ".format(u=user, h=host, w=directory)
+    return r"{u}@{h}:{w}\$ ".format(u=user, h=host, w=directory)
 
 
 if __name__ == "__main__":
