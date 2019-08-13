@@ -31,12 +31,18 @@ def download_audio(url, directory, name):
         'outtmpl': pathlib.Path(directory, name + '.%(ext)s').as_posix(),
         'postprocessors': ({'key': 'FFmpegExtractAudio'}, ),
     }
+    result = None
+
     try:
         directory.mkdir(parents=True)
     except FileExistsError:
         pass
+
     with youtube_dl.YoutubeDL(options) as ydl:
-        result = ydl.extract_info(url)
+        try:
+            result = ydl.extract_info(url)
+        except youtube_dl.utils.DownloadError:
+            print(F"{name} unavailable")
         if not result:
             return None
 
