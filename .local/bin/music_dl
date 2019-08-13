@@ -90,7 +90,7 @@ class RemoteAudio:
     def download(self, skip=False):
         """Download the audio file.
 
-        skip: skip downloading when an existing audio file exists"""
+        skip: skip downloading when a file already exists"""
         if skip:
             pathes = set(pathlib.Path(self.directory).glob(self.name + "*"))
             if pathes:
