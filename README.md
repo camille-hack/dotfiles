@@ -8,7 +8,7 @@ You need the following software:
 * [yadm](https://thelocehiliosan.github.io/yadm/)
 * pynvim, [flake8](https://gitlab.com/pycqa/flake8) and [jedi](https://github.com/davidhalter/jedi) for using with
 neovim
-* [pytaglib](https://pypi.org/project/pytaglib/) and
+* [pytaglib](https://pypi.org/project/pytaglib/), ffmpeg and
 [youtube-dl](https://rg3.github.io/youtube-dl/) for the music\_dl script
 
 Then, install [yadm](https://thelocehiliosan.github.io/yadm/) and clone
