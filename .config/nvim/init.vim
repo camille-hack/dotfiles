@@ -31,7 +31,7 @@ let g:ale_python_flake8_executable = 'python3'
 let g:ale_python_flake8_options = '-m flake8'
 
 set spelllang=de,en,fr
-" Disable mouse integration, allow middle-mouse paste
+" Allow middle-mouse paste
 set mouse=""
 " Disable flawed "smart" indentation reformating
 set autoindent nosmartindent nocindent indentexpr=
@@ -51,3 +51,5 @@ let g:markdown_folding=1
 set nowrap
 set textwidth=0
 let &colorcolumn = join(range(80,256),",")
+" Default to case-insensitive research
+set ignorecase
