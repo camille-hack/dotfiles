@@ -1,0 +1,7 @@
+#!/bin/sh
+
+yadm remote set-url origin git@github.com:camille-hack/dotfiles.git
+echo "* yadm origin changed from HTTPS to SSH"
+
+nvim '+PlugInstall' '+PlugClean' '+qall'
+echo "* neovim plugins installed"
