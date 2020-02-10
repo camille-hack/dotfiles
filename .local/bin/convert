@@ -1,131 +1,118 @@
-#!/bin/sh
+#!/usr/bin/env python3
 
-# TODO: apply to other than avi files
-#video_extensions = ["3gp", "avi", "dv", "flv", "m4v", "mkv", "mov", "mp4",
-#                        "mpeg", "mpg", "ogg", "ogv", "vob", "webm", "wmv"]
-# TODO: consider cleaning/making python script
+"""Transcode all the video files from a directory, and keep the smallest.
 
-source ~/.local/lib/functions.sh
-debug=true
-use ffmpeg
+The transcoding should:
+    - produce video files which are much smaller
+    - with an acceptable quality for cheap laptop
+    - should not take too long on a cheap laptop
+Thus using VAAPI or other hardware encoding acceleration should be a priority.
+"""
 
-usage()
-{
-	program="$1"
-	echo "usage: $program [-h] directory
 
-Convert recursively a directory's videos to h264 video format, using VAAPI.
 
-arguments:
-	-h		display this usage message
-	directory	directory containing the videos"
-}
+# TODO: check to use logging from python standard library
 
-# does not support working out of the file directory !!
-convert_file()
-{
-	file="$1"
-	file_name=""
-	file_extension=""
-	backup=""
-	converted=""
 
-	[ ! -f "$file" ] && fail "$file is not a file"
 
-	file_name="$(echo "$file" | sed 's@\(.\+\)\.[a-zA-Z0-9]\+@\1@')"
-	file_extension="$(echo "$file" | sed 's@.\+\.\([a-zA-Z0-9]\+\)@\1@')"
-	backup=".$file.backup"
-	temporary=".$file_name.mkv"
-	converted="$file_name.mkv"
+import argparse
+import os
+from pathlib import Path
+import re
+import signal
+import subprocess
+import sys
+import tempfile
+from typing import List
 
-	[ -z "$file_name" ] && fail "couldn't find name of $file"
-	[ -z "$file_extension" ] && fail "couldn't find extension of $file"
-	[ -f "$backup" ] && fail "a file named $backup already exists"
-	[ -f "$temporary" ] && fail "a file named $temporary already exists"
-	[ -f "$converted" ] && fail "a file named $converted already exists"
 
-	debug "convert $file into $temporary"
-	ffmpeg -vaapi_device /dev/dri/renderD128 -hwaccel vaapi \
-			-hwaccel_output_format vaapi \
-			-hwaccel_device /dev/dri/renderD128 \
-			-threads 1 -nostdin -xerror \
-			-i "$file" \
-			-vf 'format=nv12|vaapi,hwupload' \
-			-c:v h264_vaapi -qp 18 \
-			"$temporary"
-	# If it fails, try without hardware decoding
-	if [ $? -ne 0 ]
-	then
-		warn "couldn't convert $file with hardware decoding"
-		rm "$temporary"
-		debug "convert with software decoding $file to $temporary"
-		ffmpeg -vaapi_device /dev/dri/renderD128 \
-	                -threads 1 -nostdin -xerror \
-	                -i "$file" \
-	                -vf 'format=nv12|vaapi,hwupload' \
-	                -c:v h264_vaapi -qp 18 \
-	                "$temporary"
-	fi
-	# If it fails again, skip the file
-	if [ $? -ne ]
-	then
-		warn "couldn't convert $file"
-		debug "remove $temporary"
-		rm "$temporary"
-		return
-	fi
 
-	debug "compare size of $file and $temporary"
-	# Compare size to keep the smallest
-	file_size=$(stat --format "%s" "$file")
-	temporary_size=$(stat --format "%s" "$temporary")
-	debug "file is $file_size, temporary is $temporary_size"
-	if [ $temporary_size -ge $file_size ]
-	then
-		debug "remove $temporary, because it is bigger"
-		rm "$temporary"
-		return
-	fi
-	debug "rename $file to $backup"
-	mv "$file" "$backup"
-	debug "rename $temporary to $converted"
-	mv "$temporary"	"$converted"
+# Make this script more verbose
+global_debug = True
 
-	debug "remove backup $backup"
-	rm "$backup"
-}
 
-convert_directory()
-{
-	directory="$1"
-	file_videos=""
-	video_directory=""
-	video_name=""
 
-	[ ! -d "$directory" ] && fail "$directory is not a directory"
+def debug(message: str) -> None:
+    if global_debug:
+        print(f"\x1b[34mdebug\x1b[0m: {message}")
 
-	file_videos="$(mktemp)"
-	debug "create video list $file_videos"
-	find "$directory" -name "*.avi" > "$file_videos"
 
-	while read video
-	do
-		video_directory="$(dirname "$video")"
-		video_name="$(basename "$video")"
-		debug "change to directory $video_directory"
-		cd "$video_directory"
-		convert_file "$video_name"
-		cd -
-	done < "$file_videos"
 
-	rm "$file_videos"
-	debug "remove video list $file_videos"
-}
+def warn(message: str) -> None:
+    print(f"\x1b[43mwarning\x1b[0m: {message}")
 
-if [ "$1" = "-h" ]
-then
-	usage $0
-	exit 0
-fi
 
-convert_directory "$1"
+
+def fail(message: str) -> None:
+    print(f"\x1b[41merror:\x1b[0m: {message}")
+    sys.exit(1)
+
+
+
+def find_videos(directory: Path, extension: str) -> List:
+    """Find all the files with the given extension in the directory.
+
+    Return a list of the files."""
+    videos: List = []
+    video: List[Path, str, str] = []
+    match = None
+
+    if not directory.is_dir():
+        fail(f"\"{directory}\" must be an existing directory")
+
+    extension = extension.casefold()
+    match = re.match("\..*", extension)
+    if match == None:
+        fail(f"extension \"{extension}\" should be .extension")
+
+    debug(f"finding videos from {directory}")
+    for root, directories, files in os.walk(directory):
+        for f in files:
+            file = Path(f)
+            if file.suffix.casefold() == extension:
+                video = Path(root, file).resolve()
+                videos.append(video)
+
+    return videos
+
+
+
+def transcode(video: Path) -> None:
+    """Transcode the given video."""
+    transcoded = video.with_suffix(".mkv")
+
+    if transcoded.exists():
+        debug(f"\"{transcoded}\" already exists, skipping")
+        return
+
+    debug(f"transcode to \"{transcoded}\"")
+    try:
+        subprocess.run([ "ffmpeg", "-benchmark", "-hide_banner", "-loglevel", "panic",
+                            "-nostdin", "-y", "-xerror",
+                            "-hwaccel", "vaapi", "-hwaccel_device", "/dev/dri/renderD128",
+                            "-i", video,
+                            "-vf", "yadif",
+                            "-c:v", "libx265", "-crf", "28",
+                            "-c:a", "libopus",
+                            transcoded ])
+    except subprocess.CalledProcessError:
+        warn(f"couldn't convert to \"{transcoded}\"")
+        os.remove(f"{transcoded}")
+    except KeyboardInterrupt:
+        os.remove(f"{transcoded}")
+
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Convert all the video files " +
+                                                    "from a directory")
+    parser.add_argument("directory", help="where the videos are stored")
+    parser.add_argument("extension", help="video files extensions to convert" +
+                                            "(eg. \".MOV\" or \".avi\")")
+    arguments = parser.parse_args()
+
+    directory = Path(arguments.directory)
+    videos = find_videos(directory, arguments.extension)
+
+    for video in videos:
+        transcode(video)
