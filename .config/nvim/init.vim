@@ -21,6 +21,7 @@ Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
 Plug 'deoplete-plugins/deoplete-jedi'
 " Writing documents
 Plug 'tpope/vim-markdown'
+Plug 'junegunn/goyo.vim'
 call plug#end()
 
 " Completion (deoplete)
@@ -31,6 +32,7 @@ let g:ale_python_flake8_executable = 'python3'
 let g:ale_python_flake8_options = '-m flake8'
 
 set spelllang=de,en,fr
+let mapleader = " "
 " Allow middle-mouse paste
 set mouse=""
 " Disable flawed "smart" indentation reformating
@@ -48,8 +50,19 @@ set nomodeline
 let g:markdown_folding=1
 " Wrapping: disable visual and editing automatic wrapping ;
 " instead, highlight the 80st column
+set linebreak
 set nowrap
 set textwidth=0
 let &colorcolumn = join(range(80,256),",")
+" Goyo mode
+function! s:goyo_enter()
+	set wrap
+endfunction
+function! s:goyo_leave()
+	set nowrap
+endfunction
+autocmd! User GoyoEnter call <SID>goyo_enter()
+autocmd! User GoyoLeave call <SID>goyo_leave()
+noremap <leader>g :Goyo<CR>
 " Default to case-insensitive research
 set ignorecase
