@@ -4,6 +4,8 @@
 
 This file should do a bit of magic regarding where to download stuff."""
 
+
+
 # TODO: find a way to debug, not actually filling the user music directory
 # TODO: start tracking bugs with unitary tests
 # BUG: what if urls.csv doesn't exist ?
@@ -13,6 +15,8 @@ This file should do a bit of magic regarding where to download stuff."""
 # TODO: export with name written with ascii
 # TODO: find a way to have compatibility with android: no ["?",":"]
 
+
+
 import argparse
 import csv
 import errno
@@ -21,6 +25,29 @@ import re
 import taglib
 import user_xdg_dirs
 import youtube_dl
+
+
+
+# Make this script more verbose
+global_debug = True
+
+
+
+def debug(message: str) -> None:
+    if global_debug:
+        print(f"\x1b[34mdebug\x1b[0m: {message}")
+
+
+
+def warn(message: str) -> None:
+    print(f"\x1b[43mwarning\x1b[0m: {message}")
+
+
+
+def fail(message: str) -> None:
+    print(f"\x1b[41merror:\x1b[0m: {message}")
+    sys.exit(1)
+
 
 
 def download_audio(url, directory, name):
@@ -42,7 +69,7 @@ def download_audio(url, directory, name):
         try:
             result = ydl.extract_info(url)
         except youtube_dl.utils.DownloadError:
-            print(F"{name} unavailable")
+            warn(f"{name} unavailable")
         if not result:
             return None
 
@@ -51,10 +78,10 @@ def download_audio(url, directory, name):
         break
 
     if not audio_path:
-        print("could't get downloaded file path for %s (%s -> %s)", name, url,
-              directory)
+        warn(f"couldn't download {name} from {url} into {directory}")
 
     return audio_path
+
 
 
 def write_metadata(path, artist, album, title):
@@ -68,6 +95,7 @@ def write_metadata(path, artist, album, title):
     if title:
         audio_file.tags["TITLE"] = title
     audio_file.save()
+
 
 
 class RemoteAudio:
@@ -94,7 +122,7 @@ class RemoteAudio:
         if skip:
             pathes = set(pathlib.Path(self.directory).glob(self.name + "*"))
             if pathes:
-                print("%s already exists, skipping" % self.name)
+                debug(f"{self.name} already exists, skipping")
                 return
 
         audio_path = download_audio(self.url, self.directory, self.name)
@@ -108,12 +136,12 @@ class RemoteAudio:
         root_directory = pathlib.Path(root_directory).resolve()
         directory = self.directory
         if root_directory.as_posix() not in directory.as_posix():
-            print_error_bad_root_directory(root_directory, directory)
+            fail(f"{root_directory} not in {directory}")
 
 #       Remove all files with similar names in the directory
         matches = self.directory.glob(self.name + ".*")
         for match in matches:
-            print("removing %s…" % match.as_posix())
+            debug("removing %s…" % match.as_posix())
             match.unlink()
 
 #       Recursively remove empty directories until root_directory is
@@ -135,10 +163,6 @@ class RemoteAudio:
         if not match:
             return None
         return match.group('id')
-
-
-def print_error_bad_root_directory(root_directory, directory):
-    print("error: %s not in %s" % root_directory, directory)
 
 
 class RemoteAlbum(RemoteAudio):
@@ -172,10 +196,6 @@ class RemoteSound(RemoteAudio):
         self.metadata["title"] = None
 
 
-def print_error_wrong_csv_first_column(line_number, category):
-    print("error: line %s has an incorrect category (%s)" % line_number,
-          category)
-
 
 def parse_list(audio_directory):
     """Parse urls.csv from the given directory
@@ -184,10 +204,9 @@ def parse_list(audio_directory):
     urls.csv should be a regular CSV file with the following columns:
     * for albums,   [   "album",   artist, album,  url ]
     * for songs,    [   "song",    artist, title,  url ]
-    * for sounds,   [   "sound",   name,   url         ]
-    """
-
+    * for sounds,   [   "sound",   name,   url         ]"""
     audio_list = pathlib.Path(audio_directory, "urls.csv").resolve()
+
     with audio_list.open() as csv_file:
         reader = csv.reader(csv_file)
         for row in reader:
@@ -198,8 +217,9 @@ def parse_list(audio_directory):
             elif row[0] == "sound":
                 audio = RemoteSound(audio_directory, row[1], row[2])
             else:
-                print_error_wrong_csv_first_column(reader.line_number, row[0])
+                warn(f"incorrect category (%{row[0]}) on line {reader.line_num}")
             yield audio
+
 
 
 if __name__ == "__main__":
