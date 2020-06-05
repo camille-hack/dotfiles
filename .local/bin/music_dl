@@ -217,7 +217,7 @@ def parse_list(audio_directory):
             elif row[0] == "sound":
                 audio = RemoteSound(audio_directory, row[1], row[2])
             else:
-                warn(f"incorrect category (%{row[0]}) on line {reader.line_num}")
+                warn(f"incorrect category ({row[0]}) on line {reader.line_num}")
             yield audio
 
 
