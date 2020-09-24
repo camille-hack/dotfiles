@@ -212,14 +212,15 @@ def parse_list(audio_directory):
         reader = csv.reader(csv_file)
         for row in reader:
             if row[0] == "album":
-                audio = RemoteAlbum(audio_directory, row[1], row[2], row[3])
+                yield RemoteAlbum(audio_directory, row[1], row[2], row[3])
             elif row[0] == "song":
-                audio = RemoteSong(audio_directory, row[1], row[2], row[3])
+                yield RemoteSong(audio_directory, row[1], row[2], row[3])
             elif row[0] == "sound":
-                audio = RemoteSound(audio_directory, row[1], row[2])
+                yield RemoteSound(audio_directory, row[1], row[2])
+            elif row[0].startswith('#'):
+                pass
             else:
                 warn(f"incorrect category ({row[0]}) on line {reader.line_num}")
-            yield audio
 
 
 
