@@ -5,12 +5,15 @@ if [ -d "$HOME/.local/bin" ] ; then
 fi
 export PATH
 
-# Don't save history for other sessions
+# Don't save a history file
 unset HISTFILE
 # don't put duplicate lines or lines starting with space in the history.
 HISTCONTROL=ignoreboth
 # set history length
 HISTSIZE=1000
+
+# Set a python startup script
+export PYTHONSTARTUP="$HOME/.config/pythonrc"
 
 # checks window size after each command
 shopt -s checkwinsize

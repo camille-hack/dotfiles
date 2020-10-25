@@ -1,0 +1,41 @@
+import sys
+
+def enablerlcompleter():
+    """Enable default readline configuration on interactive prompts, by
+    registering a sys.__interactivehook__.
+    If the readline module can be imported, the hook will set the Tab key
+    as completion key.
+    DOES NOT register a history file.
+
+    Idea from https://docs.python.org/3/library/site.html#rlcompleter-config.
+    Adapted from
+    https://github.com/python/cpython/blob/3cde3788b68bce7deee1e6d31e265bbfce337731/Lib/site.py#L418
+    """
+
+    def register_readline():
+    	try:
+    		import readline
+    		import rlcompleter
+    	except ImportError:
+    		return
+
+    	# Reading the initialization (config) file may not be enough to set a
+    	# completion key, so we set one first and then read the file.
+    	readline_doc = getattr(readline, '__doc__', '')
+    	if readline_doc is not None and 'libedit' in readline_doc:
+    		readline.parse_and_bind('bind ^I rl_complete')
+    	else:
+    		readline.parse_and_bind('tab: complete')
+
+    	try:
+    		readline.read_init_file()
+    	except OSError:
+    		# An OSError here could have many causes, but the most likely one
+    		# is that there's no .inputrc file (or .editrc file in the case of
+    		# Mac OS X + libedit) in the expected location.  In that case, we
+    		# want to ignore the exception.
+    		pass
+
+    sys.__interactivehook__ = register_readline
+
+enablerlcompleter()
