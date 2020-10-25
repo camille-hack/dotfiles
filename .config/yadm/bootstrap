@@ -5,3 +5,6 @@ echo "* yadm origin changed from HTTPS to SSH"
 
 nvim '+PlugInstall' '+PlugClean' '+qall'
 echo "* neovim plugins installed"
+
+lesskey
+echo "~/.less generated"
