@@ -5,7 +5,6 @@
 This file should do a bit of magic regarding where to download stuff."""
 
 
-
 # TODO: RemoteAlbum should be rewritten so it works with playlist
 # TODO: export with name written with ascii
 # TODO: find a way to have compatibility with android: no ["?",":"]
@@ -16,8 +15,7 @@ This file should do a bit of magic regarding where to download stuff."""
 # TODO: find a way to add genre (maybe tags) or tempo, and create playlist
 # accordingly
 
-
-
+from user_messaging import debug,warn,fail
 import argparse
 import csv
 import errno
@@ -28,27 +26,9 @@ import user_xdg_dirs
 import youtube_dl
 
 
-
 # Make this script more verbose
-global_debug = True
-
-
-
-def debug(message: str) -> None:
-    if global_debug:
-        print(f"\x1b[34mdebug\x1b[0m: {message}")
-
-
-
-def warn(message: str) -> None:
-    print(f"\x1b[43mwarning\x1b[0m: {message}")
-
-
-
-def fail(message: str) -> None:
-    print(f"\x1b[41merror:\x1b[0m: {message}")
-    sys.exit(1)
-
+import user_messaging
+user_messaging.global_debug = True
 
 
 def download_audio(url, directory, name):
@@ -84,7 +64,6 @@ def download_audio(url, directory, name):
     return audio_path
 
 
-
 def write_metadata(path, artist, album, title):
     """Write basic metadata to an audio file (with pytaglib)."""
     audio_file = taglib.File(path.as_posix())
@@ -96,7 +75,6 @@ def write_metadata(path, artist, album, title):
     if title:
         audio_file.tags["TITLE"] = title
     audio_file.save()
-
 
 
 class RemoteAudio:
@@ -197,7 +175,6 @@ class RemoteSound(RemoteAudio):
         self.metadata["title"] = None
 
 
-
 def parse_list(audio_directory):
     """Parse urls.csv from the given directory
     to yield appropriate objects (RemoteAlbum, RemoteSound, RemoteSong).
@@ -221,7 +198,6 @@ def parse_list(audio_directory):
                 pass
             else:
                 warn(f"incorrect category ({row[0]}) on line {reader.line_num}")
-
 
 
 if __name__ == "__main__":
