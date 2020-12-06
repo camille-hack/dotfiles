@@ -25,3 +25,5 @@ yadm clone https://github.com/camille-hack/dotfiles.git
 * [x] use [tor with gnupg](https://gnupg.org/blog/20151224-gnupg-in-november-and-december.html)
 * [x] respect [systemd file hierarchy](https://www.freedesktop.org/software/systemd/man/file-hierarchy.html)
 and [xdg user directories](https://www.freedesktop.org/wiki/Software/xdg-user-dirs/)
+* [x] my taste of neovim
+* [x] colors are activated where possible in the terminal
