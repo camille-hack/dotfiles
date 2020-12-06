@@ -27,3 +27,4 @@ yadm clone https://github.com/camille-hack/dotfiles.git
 and [xdg user directories](https://www.freedesktop.org/wiki/Software/xdg-user-dirs/)
 * [x] my taste of neovim
 * [x] colors are activated where possible in the terminal
+* [x] [pulseffects preset](https://github.com/Digitalone1/PulseEffects-Presets)
