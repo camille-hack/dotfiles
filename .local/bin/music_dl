@@ -5,30 +5,28 @@
 This file should do a bit of magic regarding where to download stuff."""
 
 
+# TODO: generate PLS playlists according to tags
+# TODO: generate youtube playlists according to tags
 # TODO: RemoteAlbum should be rewritten so it works with playlist
 # TODO: export with name written with ascii
-# TODO: find a way to have compatibility with android: no ["?",":"]
+#       find a way to have compatibility with android file names: no ["?",":"]
 # TODO: find a way to debug, not actually filling the user music directory
 # TODO: start tracking bugs with unitary tests
-# BUG: what if urls.csv doesn't exist ?
+#       https://docs.python.org/3/library/unittest.html
 # BUG: what if music folders doesn't exist ?
-# TODO: find a way to add genre (maybe tags) or tempo, and create playlist
-# accordingly
 
-from user_messaging import debug,warn,fail
 import argparse
+import camille
 import csv
 import errno
 import pathlib
 import re
 import taglib
-import user_xdg_dirs
 import youtube_dl
 
 
 # Make this script more verbose
-import user_messaging
-user_messaging.global_debug = True
+debug_flag = True
 
 
 def download_audio(url, directory, name):
@@ -50,7 +48,7 @@ def download_audio(url, directory, name):
         try:
             result = ydl.extract_info(url)
         except youtube_dl.utils.DownloadError:
-            warn(f"{name} unavailable")
+            camille.warn(f"{name} unavailable")
         if not result:
             return None
 
@@ -59,7 +57,8 @@ def download_audio(url, directory, name):
         break
 
     if not audio_path:
-        warn(f"couldn't download {name} from {url} into {directory}")
+        camille.warn(f"""couldn't download {name} from {url} into """ +
+                     """{directory}""")
 
     return audio_path
 
@@ -101,7 +100,8 @@ class RemoteAudio:
         if skip:
             pathes = set(pathlib.Path(self.directory).glob(self.name + "*"))
             if pathes:
-                debug(f"{self.name} already exists, skipping")
+                camille.debug(f"{self.name} already exists, skipping",
+                              debug_flag)
                 return
 
         audio_path = download_audio(self.url, self.directory, self.name)
@@ -115,12 +115,12 @@ class RemoteAudio:
         root_directory = pathlib.Path(root_directory).resolve()
         directory = self.directory
         if root_directory.as_posix() not in directory.as_posix():
-            fail(f"{root_directory} not in {directory}")
+            camille.fail(f"{root_directory} not in {directory}")
 
 #       Remove all files with similar names in the directory
         matches = self.directory.glob(self.name + ".*")
         for match in matches:
-            debug("removing %s…" % match.as_posix())
+            camille.debug("removing %s…" % match.as_posix(), debug_flag)
             match.unlink()
 
 #       Recursively remove empty directories until root_directory is
@@ -197,7 +197,8 @@ def parse_list(audio_directory):
             elif row[0].startswith('#'):
                 pass
             else:
-                warn(f"incorrect category ({row[0]}) on line {reader.line_num}")
+                camille.warn(f"""incorrect category ({row[0]})""" +
+                             """ on line {reader.line_num}""")
 
 
 if __name__ == "__main__":
@@ -206,7 +207,7 @@ if __name__ == "__main__":
     parser.add_argument("command", choices=["delete", "download", "stream"],
                         help="delete, download audio files or get a stream")
     parser.add_argument("-d", "--dir", dest="directory",
-                        default=user_xdg_dirs.get_music_dir(),
+                        default=camille.get_music_dir(),
                         help="directory to store music, " +
                         "XDG music directory if none")
     parser.add_argument("-s", "--skip", action="store_true",

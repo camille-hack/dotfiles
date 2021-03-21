@@ -1,27 +1,35 @@
 #!/usr/bin/python3
 
+import enum
 import hashlib
 import os
 import socket
 import sys
 
 
-def set_16_colors_escape_codes(string, color):
-    """Return the given string surrounded by a 16 colors ANSI escape code and
-    the escape code to reset the formatting.
+class Color(enum.IntEnum):
+    black = 30
+    red = 31
+    green = 32
+    yellow = 33
+    blue = 34
+    magenta = 35
+    cyan = 36
+    white = 37,
+    default = 39
 
-    color can be one of the following: black, red, green, yellow, blue,
-                                       magenta, cyan, white, default"""
-    color_dict = {"black": 30, "red": 31, "green": 32, "yellow": 33,
-                  "blue": 34, "magenta": 35, "cyan": 36, "white": 37,
-                  "default": 39}
-    openning = r"\[\e[{color};1m\]".format(color=color_dict[color])
+
+def set_16_colors_escape_codes(string: str, color: Color) -> str:
+    """Return the given string surrounded by a 16 colors ANSI escape code and
+    the escape code to reset the formatting."""
+    openning = r"\[\e[{};1m\]".format(color)
     ending = r"\[\e[0m\]"
 
     return openning + string + ending
 
 
-def set_rgb_colors_escape_codes(string, red, green, blue):
+def set_rgb_colors_escape_codes(string: str,
+                                red: int, green: int, blue: int) -> str:
     """Return the given string surrounded by a RGB ANSI escape code and the
     escape code to reset the formatting.
 
@@ -34,7 +42,7 @@ def set_rgb_colors_escape_codes(string, red, green, blue):
     return openning + string + ending
 
 
-def set_automatic_escape_codes(string, seed=""):
+def set_automatic_escape_codes(string: str, seed="") -> str:
     """Return the given string with a RGB shell color that is always the same
     for this particular string.
 
@@ -47,19 +55,19 @@ def set_automatic_escape_codes(string, seed=""):
     return colored_string
 
 
-def generate_PS1():
+def generate_PS1() -> str:
     """Return the PS1 variable."""
 
     if 'TERM' in os.environ and os.environ['TERM'] != "linux":
         user = set_automatic_escape_codes(os.environ['USER'], "username")
         host = set_automatic_escape_codes(socket.gethostname(), "hostname")
     else:
-        user = set_16_colors_escape_codes(r"\u", "yellow")
-        host = set_16_colors_escape_codes(r"\h", "green")
+        user = set_16_colors_escape_codes(r"\u", Color.yellow)
+        host = set_16_colors_escape_codes(r"\h", Color.green)
 
     if os.environ['USER'] == "root":
-        user = set_16_colors_escape_codes("root", "red")
-    directory = set_16_colors_escape_codes(r"\w", "blue")
+        user = set_16_colors_escape_codes("root", Color.red)
+    directory = set_16_colors_escape_codes(r"\w", Color.blue)
 
     return r"{u}@{h}:{w}\$ ".format(u=user, h=host, w=directory)
 

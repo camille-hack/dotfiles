@@ -10,71 +10,47 @@ Thus using VAAPI or other hardware encoding acceleration should be a priority.
 """
 
 
-
-# TODO: check to use logging from python standard library
-
-
-
 import argparse
+import camille
 import os
-from pathlib import Path
 import re
 import signal
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 from typing import List
 
 
-
 # Make this script more verbose
-global_debug = True
-
-
-
-def debug(message: str) -> None:
-    if global_debug:
-        print(f"\x1b[34mdebug\x1b[0m: {message}")
-
-
-
-def warn(message: str) -> None:
-    print(f"\x1b[43mwarning\x1b[0m: {message}")
-
-
-
-def fail(message: str) -> None:
-    print(f"\x1b[41merror:\x1b[0m: {message}")
-    sys.exit(1)
-
+debug_flag = True
 
 
 def find_videos(directory: Path, extension: str) -> List:
     """Find all the files with the given extension in the directory.
 
     Return a list of the files."""
-    videos: List = []
-    video: List[Path, str, str] = []
+    videos: List = list()
     match = None
 
     if not directory.is_dir():
-        fail(f"\"{directory}\" must be an existing directory")
+        camille.fail(f"\"{directory}\" must be an existing directory")
 
-    extension = extension.casefold()
-    match = re.match("\..*", extension)
-    if match == None:
-        fail(f"extension \"{extension}\" should be .extension")
+    normalized_extension = extension.casefold()
+    match = re.match("\..*", normalized_extension)
+    if match is None:
+        camille.fail(f"wrong format given: \"{extension}\" instead of " +
+                     "\".xxx\"")
 
-    debug(f"finding videos from {directory}")
+    camille.debug(f"finding videos from {directory}", debug_flag)
     for root, directories, files in os.walk(directory):
         for f in files:
-            file = Path(f)
-            if file.suffix.casefold() == extension:
-                video = Path(root, file).resolve()
-                videos.append(video)
+            suffix = Path(f).suffix.casefold()
+            if suffix == normalized_extension:
+                absolute_path = Path(root, f).resolve()
+                videos.append(absolute_path)
 
     return videos
-
 
 
 def transcode(video: Path) -> None:
@@ -82,33 +58,34 @@ def transcode(video: Path) -> None:
     transcoded = video.with_suffix(".mkv")
 
     if transcoded.exists():
-        debug(f"\"{transcoded}\" already exists, skipping")
+        camille.debug(f"\"{transcoded}\" already exists, skipping", debug_flag)
         return
 
-    debug(f"transcode to \"{transcoded}\"")
+    camille.debug(f"transcode to \"{transcoded}\"", debug_flag)
     try:
-        subprocess.run([ "ffmpeg", "-benchmark", "-hide_banner", "-loglevel", "panic",
-                            "-nostdin", "-y", "-xerror",
-                            "-hwaccel", "vaapi", "-hwaccel_device", "/dev/dri/renderD128",
-                            "-i", video,
-                            "-vf", "yadif",
-                            "-c:v", "libx265", "-crf", "28",
-                            "-c:a", "libopus",
-                            transcoded ])
+        subprocess.run(["ffmpeg", "-benchmark", "-hide_banner",
+                        "-loglevel", "panic",
+                        "-nostdin", "-y", "-xerror",
+                        "-hwaccel", "vaapi",
+                        "-hwaccel_device", "/dev/dri/renderD128",
+                        "-i", video,
+                        "-vf", "yadif",
+                        "-c:v", "libx265", "-crf", "28",
+                        "-c:a", "libopus",
+                        transcoded])
     except subprocess.CalledProcessError:
-        warn(f"couldn't convert to \"{transcoded}\"")
+        camille.warn(f"couldn't convert to \"{transcoded}\"")
         os.remove(f"{transcoded}")
     except KeyboardInterrupt:
         os.remove(f"{transcoded}")
 
 
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Convert all the video files " +
-                                                    "from a directory")
+    parser = argparse.ArgumentParser(description="Convert all the video " +
+                                                 "files from a directory")
     parser.add_argument("directory", help="where the videos are stored")
-    parser.add_argument("extension", help="video files extensions to convert" +
-                                            "(eg. \".MOV\" or \".avi\")")
+    parser.add_argument("extension", help="video files extensions to " +
+                                          "convert (eg. \".MOV\" or \".avi\")")
     arguments = parser.parse_args()
 
     directory = Path(arguments.directory)
