@@ -15,10 +15,11 @@ Plug 'vim-airline/vim-airline'
 Plug 'ntpeters/vim-better-whitespace'
 Plug 'mhinz/vim-signify'
 Plug 'lifepillar/vim-solarized8'
-"" General behaviors
+"" Code completion and type checking
 Plug 'w0rp/ale'
 Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
 Plug 'deoplete-plugins/deoplete-jedi'
+Plug 'Vimjas/vim-python-pep8-indent'
 " Writing documents
 Plug 'tpope/vim-markdown'
 Plug 'junegunn/goyo.vim'
@@ -27,17 +28,13 @@ call plug#end()
 " Completion (deoplete)
 source ~/.config/nvim/completion.vim
 
-" Flake8 is installed with python3 and not default python
-let g:ale_python_flake8_executable = 'python3'
-let g:ale_python_flake8_options = '-m flake8'
-
 set spelllang=de,en,fr
 let mapleader = " "
 " Allow middle-mouse paste
 set mouse=""
 " Disable flawed "smart" indentation reformating
 set autoindent nosmartindent nocindent indentexpr=
-" Why on earth removing tabs by spaces ??
+" Why on earth replacing tabs by spaces ??
 set tabstop=8 softtabstop=8 shiftwidth=8 noexpandtab
 set ruler
 " Use true colors and solarized dark theme
@@ -64,5 +61,7 @@ endfunction
 autocmd! User GoyoEnter call <SID>goyo_enter()
 autocmd! User GoyoLeave call <SID>goyo_leave()
 noremap <leader>g :Goyo<CR>
-" Default to case-insensitive research
+" Default to case-insensitive research, except if there is an upper-case
+" letter.
 set ignorecase
+set smartcase
