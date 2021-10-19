@@ -22,6 +22,7 @@ Plug 'deoplete-plugins/deoplete-jedi'
 Plug 'Vimjas/vim-python-pep8-indent'
 " Writing documents
 Plug 'tpope/vim-markdown'
+Plug 'masukomi/vim-markdown-folding'
 Plug 'junegunn/goyo.vim'
 call plug#end()
 
