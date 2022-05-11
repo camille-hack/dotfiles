@@ -1,6 +1,3 @@
-" Clipboard
-"apt install xsel
-
 "
 " Plugins (managed with vim-plug)
 "
@@ -31,8 +28,10 @@ source ~/.config/nvim/completion.vim
 
 set spelllang=de,en,fr
 let mapleader = " "
-" Allow middle-mouse paste
-set mouse=""
+" No mouse selection to clipboard, but multi-line selection possible
+set mouse=a
+" Mouse selection to clipboard, but no multi-line selection without spaces
+"set mouse=r
 " Disable flawed "smart" indentation reformating
 set autoindent nosmartindent nocindent indentexpr=
 " Why on earth replacing tabs by spaces ??
