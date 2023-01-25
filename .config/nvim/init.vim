@@ -36,7 +36,10 @@ set mouse=a
 " Disable flawed "smart" indentation reformating
 set autoindent nosmartindent nocindent indentexpr=
 " Why on earth replacing tabs by spaces ??
-set tabstop=8 softtabstop=8 shiftwidth=8 noexpandtab
+"set tabstop=8 softtabstop=8 shiftwidth=8 noexpandtab
+" Why on earth using tabs instead of spaces ??
+set expandtab tabstop=8 softtabstop=8 shiftwidth=2
+autocmd FileType html setlocal ts=1 sts=1 sw=1 expandtab
 set ruler
 " Use true colors and solarized dark theme
 set termguicolors
