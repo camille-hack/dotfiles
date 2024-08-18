@@ -1,6 +1,6 @@
 umask 077
 export LANG="en_US.utf8"
-export LANGUAGE="en_US:de_DE:"
+export LANGUAGE="en_US.utf8:de_DE.utf8"
 export LC_ADDRESS="de_DE.utf8"
 export LC_COLLATE="de_DE.utf8"
 export LC_CTYPE="de_DE.utf8"
@@ -13,17 +13,17 @@ export LC_NUMERIC="de_DE.UTF-8"
 export LC_PAPER="de_DE.UTF-8"
 export LC_TELEPHONE="de_DE.utf8"
 export LC_TIME="de_DE.UTF-8"
-#
-#echo -n 'en_US' > ~/.config/user-dirs.locale
-#xdg-user-dirs-update --set DESKTOP "$HOME/Desktop"
-#xdg-user-dirs-update --set DOCUMENTS "$HOME/Documents"
-#xdg-user-dirs-update --set DOWNLOAD "$HOME/Downloads"
-#xdg-user-dirs-update --set MUSIC "$HOME/Music"
-#xdg-user-dirs-update --set PICTURES "$HOME/Pictures"
-#xdg-user-dirs-update --set PUBLICSHARE "$HOME/Public"
-#xdg-user-dirs-update --set TEMPLATES "$HOME/Templates"
-#xdg-user-dirs-update --set VIDEOS "$HOME/Videos"
-#
+
+echo -n 'en_US' > ~/.config/user-dirs.locale
+xdg-user-dirs-update --set DESKTOP "$HOME/Desktop"
+xdg-user-dirs-update --set DOCUMENTS "$HOME/Documents"
+xdg-user-dirs-update --set DOWNLOAD "$HOME/Downloads"
+xdg-user-dirs-update --set MUSIC "$HOME/Music"
+xdg-user-dirs-update --set PICTURES "$HOME/Pictures"
+xdg-user-dirs-update --set PUBLICSHARE "$HOME/Public"
+xdg-user-dirs-update --set TEMPLATES "$HOME/Templates"
+xdg-user-dirs-update --set VIDEOS "$HOME/Videos"
+
 if [ -d "$HOME/.local/bin" ] ; then
     PATH="$HOME/.local/bin:$PATH"
 fi
