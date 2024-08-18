@@ -34,7 +34,7 @@ def find_videos(directory: Path, extension: str) -> List:
         camille.fail(f"\"{directory}\" must be an existing directory")
 
     normalized_extension = extension.casefold()
-    match = re.match("\..*", normalized_extension)
+    match = re.match(r"\..*", normalized_extension)
     if match is None:
         camille.fail(f"wrong format given: \"{extension}\" instead of " +
                      "\".xxx\"")
