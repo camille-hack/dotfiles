@@ -16,6 +16,17 @@ Then, install [yadm](https://thelocehiliosan.github.io/yadm/) and clone
 yadm clone https://github.com/camille-hack/dotfiles.git
 ```
 
+## Fedora 39: quick setup ##
+
+```
+dnf config-manager --add-repo https://download.opensuse.org/repositories/home:TheLocehiliosan:yadm/Fedora_39/home:TheLocehiliosan:yadm.repo
+sudo dnf install neovim socat yadm
+sudo dnf install texlive-fontawesome5 texlive-scheme-minimal
+sudo dnf install python3-flake8 python3-jedi python3-neovim python3-pip python3-pytaglib
+pip install --upgrade --user youtube-dl
+
+yadm clone https://github.com/camille-hack/dotfiles.git
+```
 
 ## Features ##
 
