@@ -16,7 +16,6 @@ Plug 'lifepillar/vim-solarized8'
 Plug 'w0rp/ale'
 Plug 'Shougo/deoplete.nvim', { 'do': ':UpdateRemotePlugins' }
 Plug 'deoplete-plugins/deoplete-jedi'
-Plug 'junegunn/vim-easy-align'
 Plug 'Vimjas/vim-python-pep8-indent'
 " Writing documents
 Plug 'tpope/vim-markdown'
@@ -69,7 +68,3 @@ noremap <leader>g :Goyo<CR>
 " letter.
 set ignorecase
 set smartcase
-" Start interactive EasyAlign in visual mode (e.g. vipga)
-xmap ga <Plug>(EasyAlign)
-" Start interactive EasyAlign for a motion/text object (e.g. gaip)
-nmap ga <Plug>(EasyAlign)
