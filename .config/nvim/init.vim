@@ -20,7 +20,6 @@ Plug 'Vimjas/vim-python-pep8-indent'
 " Writing documents
 Plug 'tpope/vim-markdown'
 Plug 'masukomi/vim-markdown-folding'
-Plug 'junegunn/goyo.vim'
 call plug#end()
 
 " Completion (deoplete)
@@ -54,16 +53,6 @@ set linebreak
 set nowrap
 set textwidth=0
 let &colorcolumn = join(range(80,256),",")
-" Goyo mode
-function! s:goyo_enter()
-	set wrap
-endfunction
-function! s:goyo_leave()
-	set nowrap
-endfunction
-autocmd! User GoyoEnter call <SID>goyo_enter()
-autocmd! User GoyoLeave call <SID>goyo_leave()
-noremap <leader>g :Goyo<CR>
 " Default to case-insensitive research, except if there is an upper-case
 " letter.
 set ignorecase
