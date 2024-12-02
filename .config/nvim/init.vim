@@ -20,6 +20,7 @@ Plug 'Vimjas/vim-python-pep8-indent'
 " Writing documents
 Plug 'tpope/vim-markdown'
 Plug 'masukomi/vim-markdown-folding'
+Plug 'mechatroner/rainbow_csv'
 call plug#end()
 
 " Completion (deoplete)
@@ -57,3 +58,5 @@ let &colorcolumn = join(range(80,256),",")
 " letter.
 set ignorecase
 set smartcase
+
+autocmd BufNewFile,BufRead *.csv   set filetype=rfc_csv
