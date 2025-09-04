@@ -15,7 +15,7 @@ class Color(enum.IntEnum):
     blue = 34
     magenta = 35
     cyan = 36
-    white = 37,
+    white = 37
     default = 39
 
 
@@ -28,15 +28,14 @@ def set_16_colors_escape_codes(string: str, color: Color) -> str:
     return openning + string + ending
 
 
-def set_rgb_colors_escape_codes(string: str,
-                                red: int, green: int, blue: int) -> str:
+def set_rgb_colors_escape_codes(string: str, red: int, green: int, blue: int) -> str:
     """Return the given string surrounded by a RGB ANSI escape code and the
     escape code to reset the formatting.
 
     red, green and blue are 3 integers with values between 0 and 255."""
-    openning = r"\[\e[38;2;{red};{green};{blue}m\]".format(red=red,
-                                                           green=green,
-                                                           blue=blue)
+    openning = r"\[\e[38;2;{red};{green};{blue}m\]".format(
+        red=red, green=green, blue=blue
+    )
     ending = r"\[\e[0m\]"
 
     return openning + string + ending
@@ -49,8 +48,9 @@ def set_automatic_escape_codes(string: str, seed="") -> str:
     A seed can be added so the same string generate different color."""
     str_hash = hashlib.md5((string + seed).encode()).digest()
 
-    colored_string = set_rgb_colors_escape_codes(string, str_hash[0],
-                                                 str_hash[1], str_hash[2])
+    colored_string = set_rgb_colors_escape_codes(
+        string, str_hash[0], str_hash[1], str_hash[2]
+    )
 
     return colored_string
 
@@ -58,14 +58,14 @@ def set_automatic_escape_codes(string: str, seed="") -> str:
 def generate_PS1() -> str:
     """Return the PS1 variable."""
 
-    if 'TERM' in os.environ and os.environ['TERM'] != "linux":
-        user = set_automatic_escape_codes(os.environ['USER'], "username")
+    if "TERM" in os.environ and os.environ["TERM"] != "linux":
+        user = set_automatic_escape_codes(os.environ["USER"], "username")
         host = set_automatic_escape_codes(socket.gethostname(), "hostname")
     else:
         user = set_16_colors_escape_codes(r"\u", Color.yellow)
         host = set_16_colors_escape_codes(r"\h", Color.green)
 
-    if os.environ['USER'] == "root":
+    if os.environ["USER"] == "root":
         user = set_16_colors_escape_codes("root", Color.red)
     directory = set_16_colors_escape_codes(r"\w", Color.blue)
 
@@ -73,5 +73,5 @@ def generate_PS1() -> str:
 
 
 if __name__ == "__main__":
-    if (sys.argv[1] == "PS1"):
+    if sys.argv[1] == "PS1":
         print(generate_PS1())
