@@ -10,6 +10,8 @@ https://github.com/yt-dlp/yt-dlp/blob/master/devscripts/cli_to_api.py"""
 
 
 # TODO: skip intro of a song https://github.com/yt-dlp/yt-dlp/issues/2220
+# TODO: generate musicbrainzid to tag automatically
+# https://pypi.org/project/pyacoustid/
 # TODO: generate PLS playlists according to tags
 # TODO: generate youtube playlists according to tags
 # TODO: RemoteAlbum should be rewritten so it works with playlist
@@ -22,30 +24,35 @@ https://github.com/yt-dlp/yt-dlp/blob/master/devscripts/cli_to_api.py"""
 
 import argparse
 import camille
+import collections.abc
 import csv
 import errno
+from loguru import logger
 import pathlib
 import re
 import taglib
 import yt_dlp
+import sys
+
+# Make logging less verbose
+logger.remove()
+logger.add(sys.stderr, level="WARNING")
 
 
-# Make this script more verbose
-debug_flag = True
-
-
-def download_audio(url, directory: str, name: str, start: int = 0,
-                   end: int = 0) -> pathlib.Path:
+def download_audio(
+    url, directory: pathlib.Path, name: str, start: int = 0, end: int = 0
+) -> pathlib.Path | None:
     """Download the file from url (with yt-dlp) into the directory with the
-    given name (without extension) and return the file path."""
+    given name (without extension) and return the audio file path."""
     options: dict = {
-        'format': 'bestaudio/best',
-        'outtmpl': pathlib.Path(directory, name + '.%(ext)s').as_posix(),
-        'postprocessors': ({'key': 'FFmpegExtractAudio'}, ),
-        'download_ranges': yt_dlp.utils.download_range_func([], [[start, end]])
+        "format": "bestaudio/best",
+        "outtmpl": pathlib.Path(directory, name + ".%(ext)s").as_posix(),
+        "postprocessors": ({"key": "FFmpegExtractAudio"},),
+        "download_ranges": yt_dlp.utils.download_range_func([], [[start, end]]),
     }
-    result: pathlib.Path = None
-    camille.debug(f"""options: {options}""")
+    result: pathlib.Path | None = None
+    audio_path: pathlib.Path | None = None
+    logger.debug(f"""options: {options}""")
 
     try:
         directory.mkdir(parents=True)
@@ -56,23 +63,24 @@ def download_audio(url, directory: str, name: str, start: int = 0,
         try:
             result = ydlp.extract_info(url)
         except yt_dlp.utils.DownloadError:
-            camille.warn(f"{name} unavailable")
+            logger.warning(f"{name} unavailable")
         if not result:
             return None
 
-    pathes: list(pathlib.Path) = pathlib.Path(directory).glob(name + "*")
-    for audio_path in pathes:
+    for audio_path in pathlib.Path(directory).glob(name + "*"):
         break
 
     if not audio_path:
-        camille.warn(f"""couldn't download {name} from {url} into """ +
-                     """{directory}""")
+        logger.warning(
+            f"""couldn't download {name} from {url} into """ + """{directory}"""
+        )
 
     return audio_path
 
 
-def write_metadata(path: str, artist: str, album: str, title: str,
-                   genre: str) -> None:
+def write_metadata(
+    path: pathlib.Path, artist: str, album: str, title: str, genre: str
+) -> None:
     """Write basic metadata to an audio file (with pytaglib)."""
     audio_file = taglib.File(path.as_posix())
     audio_file.tags.clear()
@@ -89,12 +97,12 @@ def write_metadata(path: str, artist: str, album: str, title: str,
 
 class RemoteAudio:
     """Remote audio file, that can be downloaded with youtube_dl."""
-    metadata: dict[str, str] = {"artist": None,
-                                "album": None,
-                                "title": None}
 
-    def __init__(self, directory: str, name: str, url: str, start: int = 0,
-                 end: int = 0) -> None:
+    metadata: dict[str, str | None] = {"artist": None, "album": None, "title": None}
+
+    def __init__(
+        self, directory: pathlib.Path, name: str, url: str, start: int = 0, end: int = 0
+    ) -> None:
         """Configure remote audio information, to download from the url into
         the given directory with given name.
 
@@ -116,12 +124,12 @@ class RemoteAudio:
         if skip:
             pathes = set(pathlib.Path(self.directory).glob(self.name + "*"))
             if pathes:
-                camille.debug(f"{self.name} already exists, skipping",
-                              debug_flag)
+                logger.debug(f"{self.name} already exists, skipping")
                 return
 
-        audio_path = download_audio(self.url, self.directory, self.name,
-                                    self.start, self.end)
+        audio_path = download_audio(
+            self.url, self.directory, self.name, self.start, self.end
+        )
         if audio_path:
             write_metadata(audio_path, **self.metadata)
 
@@ -132,16 +140,17 @@ class RemoteAudio:
         root_directory = pathlib.Path(root_directory).resolve()
         directory = self.directory
         if root_directory.as_posix() not in directory.as_posix():
-            camille.fail(f"{root_directory} not in {directory}")
+            logger.critical(f"{root_directory} not in {directory}")
+            sys.exit(-1)
 
-#       Remove all files with similar names in the directory
+        #       Remove all files with similar names in the directory
         matches = self.directory.glob(self.name + ".*")
         for match in matches:
-            camille.debug("removing %s…" % match.as_posix(), debug_flag)
+            logger.debug("removing %s…" % match.as_posix())
             match.unlink()
 
-#       Recursively remove empty directories until root_directory is
-#       reached.
+        #       Recursively remove empty directories until root_directory is
+        #       reached.
         while directory != root_directory:
             try:
                 directory.rmdir()
@@ -150,21 +159,25 @@ class RemoteAudio:
                     raise e
             directory = directory.parent
 
-    def get_youtube_id(self) -> str:
-        regex = re.compile(r'(https?://)?(www\.)'
-                           r'?(youtube|youtu|youtube-nocookie)\.(com|be)'
-                           r'/(watch\?v=|embed/|v/|.+\?v=)'
-                           r'?(?P<id>[A-Za-z0-9\-=_]{11})')
+    def get_youtube_id(self) -> str | None:
+        regex = re.compile(
+            r"(https?://)?(www\.)"
+            r"?(youtube|youtu|youtube-nocookie)\.(com|be)"
+            r"/(watch\?v=|embed/|v/|.+\?v=)"
+            r"?(?P<id>[A-Za-z0-9\-=_]{11})"
+        )
         match = regex.match(self.url)
         if not match:
             return None
-        return match.group('id')
+        return match.group("id")
 
 
 class RemoteAlbum(RemoteAudio):
     """Remote audio album. Lives in a "albums" folder."""
-    def __init__(self, directory: str, artist: str, album: str, tags: str,
-                 url: str) -> None:
+
+    def __init__(
+        self, directory: str, artist: str, album: str, tags: str, url: str
+    ) -> None:
         location = pathlib.Path(directory, "albums", artist)
         super().__init__(location, album, url)
         self.metadata["artist"] = artist
@@ -175,8 +188,17 @@ class RemoteAlbum(RemoteAudio):
 
 class RemoteSong(RemoteAudio):
     """Remote audio song. Lives in a "songs" folder."""
-    def __init__(self, directory: str, artist: str, title: str, tags: str,
-                 url: str, start: int = 0, end: int = 0) -> None:
+
+    def __init__(
+        self,
+        directory: str,
+        artist: str,
+        title: str,
+        tags: str,
+        url: str,
+        start: int = 0,
+        end: int = 0,
+    ) -> None:
         location = pathlib.Path(directory, "songs")
         name = artist + " - " + title
         super().__init__(location, name, url, start, end)
@@ -188,8 +210,10 @@ class RemoteSong(RemoteAudio):
 
 class RemoteSound(RemoteAudio):
     """Remote sound. Lives in a "sounds" folder."""
-    def __init__(self, directory: str, artist: str, name: str, tags: str,
-                 url: str) -> None:
+
+    def __init__(
+        self, directory: str, artist: str, name: str, tags: str, url: str
+    ) -> None:
         location = pathlib.Path(directory, "sounds")
         super().__init__(location, name, url)
         self.metadata["artist"] = artist
@@ -198,7 +222,7 @@ class RemoteSound(RemoteAudio):
         self.metadata["genre"] = tags
 
 
-def parse_list(audio_directory: str) -> None:
+def parse_list(audio_directory: str) -> collections.abc.Iterator[RemoteAudio]:
     """Parse urls.csv from the given directory
     to yield appropriate objects (RemoteAlbum, RemoteSound, RemoteSong).
 
@@ -215,37 +239,55 @@ def parse_list(audio_directory: str) -> None:
         reader = csv.DictReader(csv_file, fieldnames)
         for row in reader:
             if row["type"] == "album":
-                yield RemoteAlbum(audio_directory, row["artist"], row["name"],
-                                  row["tags"], row["url"])
+                yield RemoteAlbum(
+                    audio_directory, row["artist"], row["name"], row["tags"], row["url"]
+                )
             elif row["type"] == "song":
                 if row["start"] is None:
                     row["start"] = 0
                 if row["end"] is None:
                     row["end"] = 0
-                yield RemoteSong(audio_directory, row["artist"], row["name"],
-                                 row["tags"], row["url"], int(row["start"]),
-                                 int(row["end"]))
+                yield RemoteSong(
+                    audio_directory,
+                    row["artist"],
+                    row["name"],
+                    row["tags"],
+                    row["url"],
+                    int(row["start"]),
+                    int(row["end"]),
+                )
             elif row["type"] == "sound":
-                yield RemoteSound(audio_directory, row["artist"], row["name"],
-                                  row["tags"], row["url"])
-            elif row["type"].startswith('#'):
+                yield RemoteSound(
+                    audio_directory, row["artist"], row["name"], row["tags"], row["url"]
+                )
+            elif row["type"].startswith("#"):
                 pass
             else:
-                camille.warn(f"""incorrect category ({row["type"]})""" +
-                             """ on line {reader.line_num}""")
+                logger.warning(
+                    f"""incorrect category ({row["type"]})"""
+                    + """ on line {reader.line_num}"""
+                )
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="fill up the audio folder " +
-                                                 "with good vibes")
-    parser.add_argument("command", choices=["delete", "download", "stream"],
-                        help="delete, download audio files or get a stream")
-    parser.add_argument("-d", "--dir", dest="directory",
-                        default=camille.get_music_dir(),
-                        help="directory to store music, " +
-                        "XDG music directory if none")
-    parser.add_argument("-s", "--skip", action="store_true",
-                        help="skip existing files when downloading")
+    parser = argparse.ArgumentParser(
+        description="fill up the audio folder " + "with good vibes"
+    )
+    parser.add_argument(
+        "command",
+        choices=["delete", "download", "stream"],
+        help="delete, download audio files or get a stream",
+    )
+    parser.add_argument(
+        "-d",
+        "--dir",
+        dest="directory",
+        default=camille.get_music_dir(),
+        help="directory to store music, " + "XDG music directory if none",
+    )
+    parser.add_argument(
+        "-s", "--skip", action="store_true", help="skip existing files when downloading"
+    )
     arguments = parser.parse_args()
 
     if arguments.command == "download":
@@ -256,7 +298,6 @@ if __name__ == "__main__":
             audio.delete(arguments.directory)
     elif arguments.command == "stream":
         audios = parse_list(arguments.directory)
-        ids = [audio.get_youtube_id() for audio in audios
-               if audio.get_youtube_id()]
-        print("https://www.youtube.com/watch_videos?video_ids=", end='')
-        print(*ids, sep=',')
+        ids = [audio.get_youtube_id() for audio in audios if audio.get_youtube_id()]
+        print("https://www.youtube.com/watch_videos?video_ids=", end="")
+        print(*ids, sep=",")

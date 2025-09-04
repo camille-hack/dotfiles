@@ -9,18 +9,19 @@ The transcoding should:
 Thus using VAAPI or other hardware encoding acceleration should be a priority.
 """
 
-
 import argparse
-import camille
 import os
 import re
+import sys
 import subprocess
+from loguru import logger
 from pathlib import Path
 from typing import List
 
 
-# Make this script more verbose
-debug_flag = True
+# Make this script less verbose
+logger.remove()
+logger.add(sys.stderr, level="WARNING")
 
 
 def find_videos(directory: Path, extension: str) -> List:
@@ -31,15 +32,16 @@ def find_videos(directory: Path, extension: str) -> List:
     match = None
 
     if not directory.is_dir():
-        camille.fail(f"\"{directory}\" must be an existing directory")
+        logger.critical(f'"{directory}" must be an existing directory')
+        sys.exit(1)
 
     normalized_extension = extension.casefold()
     match = re.match(r"\..*", normalized_extension)
     if match is None:
-        camille.fail(f"wrong format given: \"{extension}\" instead of " +
-                     "\".xxx\"")
+        logger.critical(f'wrong format given: "{extension}" instead of ' + '".xxx"')
+        sys.exit(1)
 
-    camille.debug(f"finding videos from {directory}", debug_flag)
+    logger.debug(f"finding videos from {directory}")
     for root, directories, files in os.walk(directory):
         for f in files:
             suffix = Path(f).suffix.casefold()
@@ -55,34 +57,54 @@ def transcode(video: Path) -> None:
     transcoded = video.with_suffix(".mkv")
 
     if transcoded.exists():
-        camille.debug(f"\"{transcoded}\" already exists, skipping", debug_flag)
+        logger.debug(f'"{transcoded}" already exists, skipping')
         return
 
-    camille.debug(f"transcode to \"{transcoded}\"", debug_flag)
+    logger.debug(f'transcode to "{transcoded}"')
     try:
-        subprocess.run(["ffmpeg", "-benchmark", "-hide_banner",
-                        "-loglevel", "panic",
-                        "-nostdin", "-y", "-xerror",
-                        "-hwaccel", "vaapi",
-                        "-hwaccel_device", "/dev/dri/renderD128",
-                        "-i", video,
-                        "-vf", "yadif",
-                        "-c:v", "libx265", "-crf", "28",
-                        "-c:a", "libopus",
-                        transcoded])
+        subprocess.run(
+            [
+                "ffmpeg",
+                "-benchmark",
+                "-hide_banner",
+                "-loglevel",
+                "panic",
+                "-nostdin",
+                "-y",
+                "-xerror",
+                "-hwaccel",
+                "vaapi",
+                "-hwaccel_device",
+                "/dev/dri/renderD128",
+                "-i",
+                video,
+                "-vf",
+                "yadif",
+                "-c:v",
+                "libx265",
+                "-crf",
+                "28",
+                "-c:a",
+                "libopus",
+                transcoded,
+            ]
+        )
     except subprocess.CalledProcessError:
-        camille.warn(f"couldn't convert to \"{transcoded}\"")
+        logger.warning(f'couldn\'t convert to "{transcoded}"')
         os.remove(f"{transcoded}")
     except KeyboardInterrupt:
         os.remove(f"{transcoded}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Convert all the video " +
-                                                 "files from a directory")
+    parser = argparse.ArgumentParser(
+        description="Convert all the video " + "files from a directory"
+    )
     parser.add_argument("directory", help="where the videos are stored")
-    parser.add_argument("extension", help="video files extensions to " +
-                                          "convert (eg. \".MOV\" or \".avi\")")
+    parser.add_argument(
+        "extension",
+        help="video files extensions to " + 'convert (eg. ".MOV" or ".avi")',
+    )
     arguments = parser.parse_args()
 
     directory = Path(arguments.directory)
