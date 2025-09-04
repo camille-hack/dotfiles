@@ -3,6 +3,7 @@
 ## Setup ##
 
 You need the following software:
+
 * python last stable version
 * [socat](http://www.dest-unreach.org/socat/) to update anonymously
 * [yadm](https://thelocehiliosan.github.io/yadm/)
@@ -12,6 +13,7 @@ neovim
 [youtube-dl](https://rg3.github.io/youtube-dl/) for the music\_dl script
 
 Then, install [yadm](https://thelocehiliosan.github.io/yadm/) and clone
+
 ```
 yadm clone https://github.com/camille-hack/dotfiles.git
 ```
@@ -33,9 +35,9 @@ yadm clone https://github.com/camille-hack/dotfiles.git
 * [x] manage dotfiles with [yadm](https://thelocehiliosan.github.io/yadm/)
 * [x] [bootstrap](https://thelocehiliosan.github.io/yadm/docs/bootstrap) neovim plugins
 * [x] use tor with git
-* [x] use [tor with gnupg](https://gnupg.org/blog/20151224-gnupg-in-november-and-december.html)
+* [x] use [tor with gnupg](https://keys.openpgp.org/about/usage#gnupg-tor)
 * [x] respect [systemd file hierarchy](https://www.freedesktop.org/software/systemd/man/file-hierarchy.html)
 and [xdg user directories](https://www.freedesktop.org/wiki/Software/xdg-user-dirs/)
 * [x] my taste of neovim
 * [x] colors are activated where possible in the terminal
-* [x] [pulseffects preset](https://github.com/Digitalone1/PulseEffects-Presets)
+* [x] [EasyEffects presets](https://github.com/Digitalone1/EasyEffects-Presets)
