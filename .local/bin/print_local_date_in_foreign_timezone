@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+
+
+import argparse
+from loguru import logger
+import os
+import subprocess
+import sys
+
+
+def get_local_timezone() -> str:
+    completed_process: subprocess.CompletedProcess | None = None
+
+    try:
+        completed_process = subprocess.run(
+            ["timedatectl", "show", "-P", "Timezone"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        logger.critical("failed to run timedatectl")
+        sys.exit(1)
+    logger.debug(f"{completed_process.args} -> {completed_process.stdout.strip()}")
+
+    local_timezone = completed_process.stdout.strip()
+    logger.debug(f"local timezone: {local_timezone!r}")
+
+    return local_timezone
+
+
+def convert_local_date_in_foreign_date(local_date: str, foreign_timezone: str) -> str:
+    """Convert the local date into a foreign date.
+    The local date in the local timezone is converted into the equivalent date in the foreign timezone.
+    """
+    completed_process: subprocess.CompletedProcess | None = None
+    env_with_foreign_timezone = os.environ.copy()
+    env_with_foreign_timezone["TZ"] = foreign_timezone
+    local_timezone = get_local_timezone()
+
+    try:
+        completed_process = subprocess.run(
+            ["date", "--date", f'TZ="{local_timezone}" {local_date}'],
+            env=env_with_foreign_timezone,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        logger.critical(
+            f"unknown formatting:\n  local_timezone: '{local_timezone}'\n  local_date: '{local_date}'"
+        )
+        sys.exit(1)
+    logger.debug(f"{completed_process.args} -> {completed_process.stdout.strip()}")
+
+    foreign_date = completed_process.stdout.strip()
+    logger.debug(f"foreign date: {foreign_date}")
+
+    return foreign_date
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Convert a local date in the date of a different timezone.",
+        epilog="""example:
+    %(prog)s "Thursday 1 week 15:00" "America/Buenos_Aires
+
+    prints the time and date in Buenos Aires, for the next Thursday in 1 week at 15:00 local time""",
+    )
+    parser.add_argument(
+        "local_date",
+        help="date in the current timezone, (see 'DATE STRING' section in date's manual)",
+    )
+    parser.add_argument(
+        "foreign_timezone",
+        help="timezone to convert the date in (see 'timedatectl list-timezones')",
+    )
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="""increase verbosity"""
+    )
+    arguments = parser.parse_args()
+
+    logger.remove()
+    if arguments.verbose:
+        logger.add(sys.stderr, level="DEBUG")
+    else:
+        logger.add(sys.stderr, level="WARNING")
+
+    print(
+        convert_local_date_in_foreign_date(
+            arguments.local_date, arguments.foreign_timezone
+        )
+    )
